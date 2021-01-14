@@ -1,15 +1,17 @@
 import React from 'react';
-import AppBar from './AppBar';
-import GameBoard from './GameBoard';
+import { BrowserRouter, Route, Switch} from "react-router-dom";
+import Game from './Game';
+import Public from './Public';
+
 
 function App() {
   return (
-    <>
-        <AppBar />
-        <div style={{marginTop: '70px', marginLeft: '12px', marginRight: '12px'}}>
-            <GameBoard />
-        </div>
-    </>
+    <BrowserRouter basename='/'>
+        <Switch>
+            <Route exact path="/play" component={Game} />
+            <Route exact path="/" component={Public} />
+        </Switch>
+    </BrowserRouter>
   );
 }
 

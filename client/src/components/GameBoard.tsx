@@ -20,25 +20,20 @@ function GameBoard(props: Props) {
         <>
             <GameHUD game={props.game} />
             <Board board={props.game.board} />
+            <div className='container' style={{marginTop: 24}}>
+                <div className='row justify-content-center'>
+                    <button onClick={() => props.initGame()} className='btn btn-lg btn-primary'>RESET</button>
+                </div>
+            </div>
         </>
     );
 }
 
 function GameHUD(props: {game: GameBoardState}){
     let playerMessage = props.game.winner == null ? props.game.turn : `${props.game.winner} WINS !`;
-    if(props.game.winner == null){
-        return(
-            <>
-            <h3 className='h3' style={{textAlign: 'center'}}>{playerMessage}</h3>
-            <h4 style={{textAlign: 'center', marginBottom: '32px'}}>TURN {props.game.turnCount}</h4>
-            </>
-        );
-    }
+
     return(
-        <>
-        <h2 className='h2' style={{textAlign: 'center'}}>{playerMessage}</h2>
-        <h4 style={{textAlign: 'center', marginBottom: '32px'}}>  </h4>
-        </>
+        <h3 className='h2' style={{textAlign: 'center', marginBottom: '32px'}}>{playerMessage}</h3>
     );
 }
 
