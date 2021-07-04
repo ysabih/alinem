@@ -2,7 +2,7 @@ import React from "react";
 import { connect } from "react-redux";
 import { ApplicationState } from "../store";
 import { addPiece, movePiece, selectPiece } from "../store/gameBoard/actions";
-import { GameBoardState, GameMode, Player, Point, PointState } from "../store/gameBoard/types";
+import { GameBoardState, GameMode, PlayerTurn, Point, PointState } from "../store/gameBoard/types";
 import { isPlayable, getPositionState } from "../utils/gameRulesHelpers";
 
 interface StateProps {
@@ -48,7 +48,7 @@ function getPositionColor(point: PointState, playable: boolean): PositionColor{
     if(point == null) {
         return playable ? PositionColor.EmptyPlayable : PositionColor.Empty;
     }
-    if(point === Player.ONE) return PositionColor.PlayerOne;
+    if(point === PlayerTurn.ONE) return PositionColor.PlayerOne;
     return PositionColor.PlayerTwo;
 }
 

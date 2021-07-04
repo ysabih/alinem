@@ -1,9 +1,12 @@
+import 'bootstrap/dist/css/bootstrap.css';
 import {combineReducers, createStore} from 'redux';
 import { gameBoardReducer } from './gameBoard/reducer';
+import { userReducer } from './user/reducer';
 import {composeWithDevTools} from 'redux-devtools-extension';
 
 const rootReducer = combineReducers({
-    game: gameBoardReducer
+    game: gameBoardReducer,
+    user: userReducer
 });
 
 export type ApplicationState = ReturnType<typeof rootReducer>

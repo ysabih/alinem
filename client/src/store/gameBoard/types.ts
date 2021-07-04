@@ -9,30 +9,45 @@ export interface Point {
     readonly x: number,
     readonly y: number
 }
-export enum Player {
-    ONE = 'PLAYER 1',
-    TWO = 'PLAYER 2'
+export enum PlayerTurn {
+    ONE = 0,
+    TWO = 1
 }
 export enum GameMode {
     PUT = 'PUT',
     MOVE = 'MOVE'
 }
-export type PointState = Player | null
+export enum PlayerType {
+    LOCAL_HUMAN,
+    REMOTE_HUMAN,
+    COMPUTER
+}
+export type PointState = PlayerTurn | null
 
 export interface GameBoardState {
-    turn: Player,
-    winner: Player | null,
+    playerTypes : PlayerType[]
+    turn: PlayerTurn,
+    winner: PlayerTurn | null,
     turnCount: number,
     board: PointState[][],
     gameMode: GameMode
     selected: Point | null
 }
 
+export enum GameType {
+    VS_COMPUTER = "vsComputer"
+}
+
 export interface GameBoardAction {
     readonly type: GameBoardActionType
 }
 
-export interface PutPieceAction extends GameBoardAction{
+export interface InitGameAction extends GameBoardAction {
+    type: GameBoardActionType.INIT,
+    gameType: GameType
+}
+
+export interface PutPieceAction extends GameBoardAction {
     type: GameBoardActionType.ADD_PIECE,
     readonly position: Point
 }

@@ -1,11 +1,12 @@
 import { isWinner, checkValidMove, checkValidPut, getPositionState } from '../../utils/gameRulesHelpers';
 import {PutPieceAction, GameBoardAction, GameBoardActionType, 
-        GameBoardState, GameMode, MovePieceAction, Player, PointState, SelectPieceAction} from './types';
+        GameBoardState, GameMode, MovePieceAction, PlayerTurn, PointState, SelectPieceAction, PlayerType} from './types';
 
 const BOARD_ROW_LENGTH = 3;
 
-const initialState: GameBoardState = {
-    turn: Player.ONE,
+const vsComputerInitialState: GameBoardState = {
+    playerTypes: [PlayerType.LOCAL_HUMAN, PlayerType.COMPUTER],
+    turn: PlayerTurn.ONE,
     winner: null,
     turnCount: 1,
     board: [[null, null, null], [null, null, null], [null, null, null]],
@@ -13,7 +14,7 @@ const initialState: GameBoardState = {
     selected: null,
 }
 
-export function gameBoardReducer(state: GameBoardState = initialState, action: GameBoardAction): GameBoardState {
+export function gameBoardReducer(state: GameBoardState = vsComputerInitialState, action: GameBoardAction): GameBoardState {
     switch(action.type){
         case GameBoardActionType.ADD_PIECE : {
             if(state.gameMode !== GameMode.PUT){
@@ -26,8 +27,9 @@ export function gameBoardReducer(state: GameBoardState = initialState, action: G
             let updatedBoard: PointState[][] = calculateBoardOnPut(state, newPieceAction);
             let win: boolean = isWinner(updatedBoard, state.turn);
             let nextTurn: number = win ? state.turnCount : state.turnCount + 1;
-            let nextPlayer: Player = win ? state.turn : other(state.turn);
+            let nextPlayer: PlayerTurn = win ? state.turn : other(state.turn);
             return  {
+                ...state,
                 turnCount: nextTurn,
                 winner: win ? state.turn : null,
                 turn: nextPlayer,
@@ -46,8 +48,9 @@ export function gameBoardReducer(state: GameBoardState = initialState, action: G
             let updatedBoard: PointState[][] = calculateBoardOnMove(state, moveAction);
             let win: boolean = isWinner(updatedBoard, state.turn);
             let nextTurn: number = win ? state.turnCount : state.turnCount + 1;
-            let nextPlayer: Player = win ? state.turn : other(state.turn);
+            let nextPlayer: PlayerTurn = win ? state.turn : other(state.turn);
             return {
+                ...state,
                 turnCount: nextTurn,
                 winner: win ? state.turn : null,
                 turn: nextPlayer,
@@ -73,7 +76,7 @@ export function gameBoardReducer(state: GameBoardState = initialState, action: G
         }
 
         case GameBoardActionType.INIT : {
-            return initialState;
+            return vsComputerInitialState;
         }
         
         default:
@@ -103,6 +106,6 @@ function clone(array: PointState[][]): PointState[][] {
     return copy;
 }
 
-function other(player: Player){
-    return player === Player.ONE ? Player.TWO : Player.ONE;
+function other(player: PlayerTurn){
+    return player === PlayerTurn.ONE ? PlayerTurn.TWO : PlayerTurn.ONE;
 }

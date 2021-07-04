@@ -1,8 +1,9 @@
-import {GameBoardActionType, PutPieceAction, MovePieceAction, Point, GameBoardAction, SelectPieceAction} from './types';
+import {GameBoardActionType, PutPieceAction, MovePieceAction, Point, SelectPieceAction, GameType, InitGameAction} from './types';
 
-export function initGame() : GameBoardAction {
+export function initGame(gameType: GameType) : InitGameAction {
     return {
-        type: GameBoardActionType.INIT
+        type: GameBoardActionType.INIT,
+        gameType: gameType
     }
 }
 

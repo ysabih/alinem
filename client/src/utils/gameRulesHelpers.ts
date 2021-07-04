@@ -1,4 +1,4 @@
-import { GameBoardState, GameMode, MovePieceAction, Player, Point, PointState, PutPieceAction } from "../store/gameBoard/types";
+import { GameBoardState, GameMode, MovePieceAction, PlayerTurn, Point, PointState, PutPieceAction } from "../store/gameBoard/types";
 
 export function checkValidPut(gameState: GameBoardState, put: PutPieceAction): void {
 
@@ -8,7 +8,7 @@ export function checkValidMove(gameState: GameBoardState, move: MovePieceAction)
     
 }
 
-export function isWinner(board: PointState[][], currentPlayer: Player): boolean{
+export function isWinner(board: PointState[][], currentPlayer: PlayerTurn): boolean{
     if(board.length > 3){
         throw new Error(`Calculating winner on ${board.length}-piece board not implemented`);
     }
@@ -20,7 +20,7 @@ export function isWinner(board: PointState[][], currentPlayer: Player): boolean{
     return false;
 }
 
-function getPlayerPositions(board: PointState[][], player: Player): Point[]{
+function getPlayerPositions(board: PointState[][], player: PlayerTurn): Point[]{
     let result = new Array<Point>();
     for(let i=0; i<board.length; i++){
         for(let k=0; k<board[0].length; k++){
