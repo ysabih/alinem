@@ -1,8 +1,10 @@
 ﻿namespace Alinem.Models
 {
-	public enum Player
+	public class Player
 	{
-		ONE,
-		TWO
+		public string Id { get; set; }
+		public string Name { get; set; }
+		public PlayerType Type {get; set; }
 	}
+
 }
