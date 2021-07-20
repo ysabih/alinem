@@ -4,6 +4,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Alinem.Hubs;
+using Alinem.Logic;
 
 namespace Alinem
 {
@@ -19,7 +20,22 @@ namespace Alinem
 		// This method gets called by the runtime. Use this method to add services to the container.
 		public void ConfigureServices(IServiceCollection services)
 		{
+			// Business services
+			services.AddSingleton(new GameLogic());
+			services.AddSingleton(new ServerState());
+			services.AddSingleton(new RandomActionGameAI());
+
+			// Infrastructure services
 			services.AddSignalR();
+			services.AddCors(options =>
+			{
+				options.AddDefaultPolicy(builder =>
+				{
+					builder.AllowAnyOrigin()
+						   .AllowAnyHeader()
+						   .AllowAnyMethod();
+				});
+			});
 		}
 
 		// This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -31,6 +47,7 @@ namespace Alinem
 			}
 
 			app.UseRouting();
+			app.UseCors();
 			app.UseEndpoints(endpoints =>
 			{
 				endpoints.MapHub<GameHub>("/gamehub");
