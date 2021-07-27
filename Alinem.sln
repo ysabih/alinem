@@ -5,7 +5,9 @@ VisualStudioVersion = 16.0.29709.97
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Alinem", "Alinem\Alinem.csproj", "{56603477-6747-4BAA-9C71-1AF7E2FC84B7}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Alinem.UnitTests", "Alinem.UnitTests\Alinem.UnitTests.csproj", "{EE5C082F-FA59-4428-BE53-9C1BD3492FCB}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Alinem.UnitTests", "Alinem.UnitTests\Alinem.UnitTests.csproj", "{EE5C082F-FA59-4428-BE53-9C1BD3492FCB}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Alinem.IntegrationTests", "Alinem.IntegrationTests\Alinem.IntegrationTests.csproj", "{7C812891-6D16-4740-8BAE-A2506BECFA4B}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -21,6 +23,10 @@ Global
 		{EE5C082F-FA59-4428-BE53-9C1BD3492FCB}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{EE5C082F-FA59-4428-BE53-9C1BD3492FCB}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{EE5C082F-FA59-4428-BE53-9C1BD3492FCB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7C812891-6D16-4740-8BAE-A2506BECFA4B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7C812891-6D16-4740-8BAE-A2506BECFA4B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7C812891-6D16-4740-8BAE-A2506BECFA4B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7C812891-6D16-4740-8BAE-A2506BECFA4B}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
