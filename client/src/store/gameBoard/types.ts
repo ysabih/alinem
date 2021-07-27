@@ -1,5 +1,5 @@
-export enum GameBoardActionType {
-    INIT = "gameBoard/init",
+export enum GameActionType {
+    APPLY_SERVER_STATE = "game/applyServerState",
     ADD_PIECE = "gameBoard/addPiece",
     MOVE_PIECE = "gameBoard/MovePiece",
     SELECT_PIECE = "gameBoard/SelectPiece"
@@ -10,55 +10,75 @@ export interface Point {
     readonly y: number
 }
 export enum PlayerTurn {
-    ONE = 0,
-    TWO = 1
+    ONE = "ONE",
+    TWO = "TWO"
 }
 export enum GameMode {
     PUT = 'PUT',
     MOVE = 'MOVE'
 }
 export enum PlayerType {
-    LOCAL_HUMAN,
-    REMOTE_HUMAN,
+    HUMAN,
     COMPUTER
 }
 export type PointState = PlayerTurn | null
 
+export interface GameState {
+    id: string | null,
+    startTimtUtc: Date | null,
+    player1: Player | null,
+    player2: Player | null,
+    boardState: GameBoardState
+    userConnectionsState: UserConnectionState[]
+}
+
 export interface GameBoardState {
-    playerTypes : PlayerType[]
-    turn: PlayerTurn,
+    currentTurn: PlayerTurn | null,
     winner: PlayerTurn | null,
-    turnCount: number,
+    turnNumber: number,
     board: PointState[][],
     gameMode: GameMode
     selected: Point | null
 }
 
+export interface Player {
+    id: string,
+    name: string,
+    type: PlayerType
+}
+
+export enum UserConnectionState {
+    CONNECTED = "CONNECTED",
+	NOT_CONNECTED = "NOT_CONNECTED",
+	ABORTED = "ABORTED"
+}
+
 export enum GameType {
-    VS_COMPUTER = "vsComputer"
+    VS_COMPUTER = "VS_COMPUTER"
 }
 
-export interface GameBoardAction {
-    readonly type: GameBoardActionType
+export interface GameAction {
+    readonly type: GameActionType
 }
 
-export interface InitGameAction extends GameBoardAction {
-    type: GameBoardActionType.INIT,
-    gameType: GameType
+// Used to update state following notification from server
+export interface ApplyServerStateAction extends GameAction {
+    type: GameActionType.APPLY_SERVER_STATE,
+    readonly newState: GameState
 }
 
-export interface PutPieceAction extends GameBoardAction {
-    type: GameBoardActionType.ADD_PIECE,
+export interface PutPieceAction extends GameAction {
+    type: GameActionType.ADD_PIECE,
     readonly position: Point
 }
 
-export interface SelectPieceAction extends GameBoardAction {
-    type: GameBoardActionType.SELECT_PIECE,
+export interface SelectPieceAction extends GameAction {
+    type: GameActionType.SELECT_PIECE,
     readonly position: Point
 }
 
-export interface MovePieceAction extends GameBoardAction{
-    type: GameBoardActionType.MOVE_PIECE
+export interface MovePieceAction extends GameAction{
+    type: GameActionType.MOVE_PIECE
     readonly from: Point,
     readonly to: Point
 }

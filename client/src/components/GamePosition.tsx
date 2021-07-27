@@ -6,7 +6,7 @@ import { GameBoardState, GameMode, PlayerTurn, Point, PointState } from "../stor
 import { isPlayable, getPositionState } from "../utils/gameRulesHelpers";
 
 interface StateProps {
-    game: GameBoardState
+    gameBoard: GameBoardState
 }
 interface DispatchProps {
     addPiece: typeof addPiece,
@@ -21,8 +21,8 @@ type Props = StateProps & DispatchProps & OwnProps;
 
 function GamePosition(props: Props) {
     const size = 100;
-    let state: PointState = props.game.board[props.position.y][props.position.x];
-    let playable: boolean = isPlayable(props.game, props.position);
+    let state: PointState = props.gameBoard.board[props.position.y][props.position.x];
+    let playable: boolean = isPlayable(props.gameBoard, props.position);
     const color = getPositionColor(state, playable);
 
     return (
@@ -53,21 +53,21 @@ function getPositionColor(point: PointState, playable: boolean): PositionColor{
 }
 
 function onPositionClicked(props: Props){
-    switch(props.game.gameMode) {
+    switch(props.gameBoard.gameMode) {
         case GameMode.PUT: {
             props.addPiece(props.position);
             break;
         }
         case GameMode.MOVE: {
-            if(getPositionState(props.game.board, props.position) === props.game.turn){
+            if(getPositionState(props.gameBoard.board, props.position) === props.gameBoard.currentTurn){
                 props.selectPiece(props.position);
             }
             else {
                 // make move
-                if(props.game.selected == null){
+                if(props.gameBoard.selected == null){
                     throw new Error("Error, empty position clicked in MOVE mode while no piece is selected");
                 }
-                props.movePiece(props.game.selected, props.position)
+                props.movePiece(props.gameBoard.selected, props.position)
             }
         }
     }
@@ -75,7 +75,7 @@ function onPositionClicked(props: Props){
 
 function mapState(state: ApplicationState) : StateProps {
     return {
-        game: state.game
+        gameBoard: state.game.boardState
     };
 }
 const mapDispatch : DispatchProps = {

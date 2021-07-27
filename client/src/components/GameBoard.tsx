@@ -1,17 +1,20 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { connect } from 'react-redux';
-import { GameBoardState, GameType, PlayerTurn, PlayerType, PointState} from '../store/gameBoard/types';
-import { initGame } from '../store/gameBoard/actions'
+import { GameBoardState, GameState, GameType, PlayerTurn, PlayerType, PointState} from '../store/gameBoard/types';
 import { ApplicationState} from '../store/index'
 import GamePosition from './GamePosition';
 import { UserState } from '../store/user/types';
+import { backendService } from '../server/backendService'
+import LoadingSpinner from './LoadingSpinner';
+import { InitGameRequest } from '../server/types';
+import { applyServerState } from '../store/gameBoard/actions';
 
 interface StateProps {
-    game: GameBoardState
+    game: GameState
     user: UserState
 }
 interface DispatchProps {
-    initGame: typeof initGame
+    applyServerState: typeof applyServerState
 }
 interface OwnProps {
     gameType: GameType
@@ -20,18 +23,52 @@ type Props = StateProps & DispatchProps & OwnProps;
 
 function GameBoard(props: Props) {
     const [initialized, setInitialized] = useState(false);
-    // Init game before first render
-    if(!initialized){
-        initGame(props.gameType);
+    const [loading, setLoading] = useState(false);
+
+    // Init game on server
+    useEffect(() => {
+        runBlockingAsync(initializeAsync);
+    }, []);
+
+    async function initializeAsync() {
+        if(initialized){
+           return 
+        }
+        
+        await backendService.connectAsync();
+        // initiate game on server first
+        let initRequest: InitGameRequest = {
+            gameType: props.gameType,
+            requesterPlayerName: props.user.name,
+            // TODO: Make this configurable
+            requesterTurn: PlayerTurn.ONE
+        }
+        let boardState = await backendService.initGameAsync(initRequest);
+        if(!boardState) {
+            throw new Error("New board state cannot be falsy, value: "+boardState);
+        }
+        console.log("Initialized game on server, booard state: ", boardState);
+
+        props.applyServerState(boardState);
+
         setInitialized(true);
     }
+
+    function runBlockingAsync(func: () => Promise<void>) {
+        setLoading(true);
+        func().then(() => setLoading(false));
+    }
+
     return (
         <>
-            <GameHUD game={props.game} user={props.user} />
-            <Board board={props.game.board} />
-            <div className='container' style={{marginTop: 24}}>
-                <div className='row justify-content-center'>
-                    <button onClick={() => props.initGame(props.gameType)} className='btn btn-lg btn-primary'>RESET</button>
+            { loading ? <LoadingSpinner/> : <></> }
+            <div style={{opacity: loading? 0.5 : 1}}>
+                <GameHUD game={props.game} user={props.user} />
+                <Board board={props.game.boardState.board} />
+                <div className='container' style={{marginTop: 24}}>
+                    <div className='row justify-content-center'>
+                        <button className='btn btn-lg btn-primary'>RESET</button>
+                    </div>
                 </div>
             </div>
         </>
@@ -40,13 +77,14 @@ function GameBoard(props: Props) {
 
 function GameHUD(props: StateProps){
     let playerNames = getPlayerDisplayNames(props);
-    if(props.game.winner != null){
-        let winnerName = props.game.winner === PlayerTurn.ONE ? playerNames[0] : playerNames[1];
+    let boardState: GameBoardState = props.game.boardState;
+    if(boardState.winner != null){
+        let winnerName = boardState.winner === PlayerTurn.ONE ? playerNames[0] : playerNames[1];
         return(
             <h3 className='h2' style={{textAlign: 'center', marginBottom: '32px'}}>{winnerName} WINS!</h3>
         );
     }
-    let playerTurn = props.game.turn;
+    let playerTurn = boardState.currentTurn;
     let playerCursorStyle = "2px solid";
     let playerOneBorder = playerTurn === PlayerTurn.ONE ? playerCursorStyle : "";
     let playerTwoBorder = playerTurn === PlayerTurn.TWO ? playerCursorStyle : "";
@@ -61,17 +99,11 @@ function GameHUD(props: StateProps){
     );
 }
 
-function getPlayerDisplayNames(props: StateProps) : string[] {
-    return props.game.playerTypes.map(element => {
-        if(element === PlayerType.COMPUTER) {
-            return "Computer"
-        }
-        if(element === PlayerType.LOCAL_HUMAN) {
-            return "You"
-        }
-        //TODO: Implement getting remote player name
-        throw new Error("Not implemented");
-    })
+function getPlayerDisplayNames(props: StateProps) : (string|undefined)[] {
+    return  [
+        props.game.player1?.name,
+        props.game.player2?.name
+    ];
 }
 
 function Board(props: {board: PointState[][]}) {
@@ -109,7 +141,7 @@ function mapState(state: ApplicationState) : StateProps {
     };
 }
 const mapDispatch : DispatchProps = {
-    initGame: initGame
+    applyServerState: applyServerState
 }
 export default connect<StateProps, DispatchProps, OwnProps, ApplicationState>(
     mapState,

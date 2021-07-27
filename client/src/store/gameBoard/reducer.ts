@@ -1,84 +1,104 @@
 import { isWinner, checkValidMove, checkValidPut, getPositionState } from '../../utils/gameRulesHelpers';
-import {PutPieceAction, GameBoardAction, GameBoardActionType, 
-        GameBoardState, GameMode, MovePieceAction, PlayerTurn, PointState, SelectPieceAction, PlayerType} from './types';
+import {PutPieceAction, GameAction, GameActionType, 
+        GameBoardState, GameMode, MovePieceAction, PlayerTurn, PointState, SelectPieceAction, ApplyServerStateAction, GameState, UserConnectionState} from './types';
 
 const BOARD_ROW_LENGTH = 3;
 
-const vsComputerInitialState: GameBoardState = {
-    playerTypes: [PlayerType.LOCAL_HUMAN, PlayerType.COMPUTER],
-    turn: PlayerTurn.ONE,
-    winner: null,
-    turnCount: 1,
-    board: [[null, null, null], [null, null, null], [null, null, null]],
-    gameMode: GameMode.PUT,
-    selected: null,
+const vsComputerInitialState: GameState = {
+    id: null,
+    startTimtUtc: null,
+    player1: null,
+    player2: null,
+    userConnectionsState: [
+        UserConnectionState.NOT_CONNECTED,
+        UserConnectionState.NOT_CONNECTED
+    ],
+    boardState: {
+        currentTurn: null,
+        winner: null,
+        turnNumber: 1,
+        board: [[null, null, null], [null, null, null], [null, null, null]],
+        gameMode: GameMode.PUT,
+        selected: null,
+    }
 }
 
-export function gameBoardReducer(state: GameBoardState = vsComputerInitialState, action: GameBoardAction): GameBoardState {
+export function gameReducer(state: GameState = vsComputerInitialState, action: GameAction): GameState {
     switch(action.type){
-        case GameBoardActionType.ADD_PIECE : {
-            if(state.gameMode !== GameMode.PUT){
+        case GameActionType.ADD_PIECE : {
+            if(state.boardState.gameMode !== GameMode.PUT){
                 throw new Error(`Cannot add have more than ${BOARD_ROW_LENGTH} per player`);
             }
             // Check if valid move
             let newPieceAction = action as PutPieceAction;
-            checkValidPut(state, newPieceAction);
+            checkValidPut(state.boardState, newPieceAction);
 
-            let updatedBoard: PointState[][] = calculateBoardOnPut(state, newPieceAction);
-            let win: boolean = isWinner(updatedBoard, state.turn);
-            let nextTurn: number = win ? state.turnCount : state.turnCount + 1;
-            let nextPlayer: PlayerTurn = win ? state.turn : other(state.turn);
+            let updatedBoard: PointState[][] = calculateBoardOnPut(state.boardState, newPieceAction);
+            let win: boolean = isWinner(updatedBoard, state.boardState.currentTurn);
+            let nextTurn: number = win ? state.boardState.turnNumber : state.boardState.turnNumber + 1;
+            let nextPlayer: PlayerTurn | null = win ? state.boardState.currentTurn : other(state.boardState.currentTurn);
             return  {
                 ...state,
-                turnCount: nextTurn,
-                winner: win ? state.turn : null,
-                turn: nextPlayer,
-                board: updatedBoard,
-                gameMode: nextTurn > BOARD_ROW_LENGTH * 2 ? GameMode.MOVE : GameMode.PUT,
-                selected: state.selected
+                boardState: {
+                    ...state.boardState,
+                    turnNumber: nextTurn,
+                    winner: win ? state.boardState.currentTurn : null,
+                    currentTurn: nextPlayer,
+                    board: updatedBoard,
+                    gameMode: nextTurn > BOARD_ROW_LENGTH * 2 ? GameMode.MOVE : GameMode.PUT,
+                }
             }
         }
 
-        case GameBoardActionType.MOVE_PIECE: {
-            if(state.turnCount < BOARD_ROW_LENGTH  * 2) {
+        case GameActionType.MOVE_PIECE: {
+            if(state.boardState.turnNumber < BOARD_ROW_LENGTH  * 2) {
                 throw new Error(`Cannot move pieces before each player has put ${BOARD_ROW_LENGTH} pieces`)
             }
             let moveAction = action as MovePieceAction;
-            checkValidMove(state, moveAction);
-            let updatedBoard: PointState[][] = calculateBoardOnMove(state, moveAction);
-            let win: boolean = isWinner(updatedBoard, state.turn);
-            let nextTurn: number = win ? state.turnCount : state.turnCount + 1;
-            let nextPlayer: PlayerTurn = win ? state.turn : other(state.turn);
+            checkValidMove(state.boardState, moveAction);
+            let updatedBoard: PointState[][] = calculateBoardOnMove(state.boardState, moveAction);
+            let win: boolean = isWinner(updatedBoard, state.boardState.currentTurn);
+            let nextTurn: number = win ? state.boardState.turnNumber : state.boardState.turnNumber + 1;
+            let nextPlayer: PlayerTurn | null = win ? state.boardState.currentTurn : other(state.boardState.currentTurn);
             return {
                 ...state,
-                turnCount: nextTurn,
-                winner: win ? state.turn : null,
-                turn: nextPlayer,
-                board: updatedBoard,
-                gameMode: nextTurn > BOARD_ROW_LENGTH * 2 ? GameMode.MOVE : GameMode.PUT,
-                selected: null
+                boardState: {
+                    ...state.boardState,
+                    turnNumber: nextTurn,
+                    winner: win ? state.boardState.currentTurn : null,
+                    currentTurn: nextPlayer,
+                    board: updatedBoard,
+                    gameMode: nextTurn > BOARD_ROW_LENGTH * 2 ? GameMode.MOVE : GameMode.PUT,
+                    selected: null
+                }
             }
         }
 
-        case GameBoardActionType.SELECT_PIECE: {
+        case GameActionType.SELECT_PIECE: {
             let selectAction = action as SelectPieceAction;
-            let positionState = getPositionState(state.board, selectAction.position);
+            let positionState = getPositionState(state.boardState.board, selectAction.position);
             if(positionState == null){
                 throw new Error("Cannot select an empty position");
             }
-            if(positionState !== state.turn){
-                throw new Error(`Cannot select a ${positionState} piece on ${state.turn}'s turn`);
+            if(positionState !== state.boardState.currentTurn){
+                throw new Error(`Cannot select a ${positionState} piece on ${state.boardState.currentTurn}'s turn`);
             }
             return {
                 ...state,
-                selected: selectAction.position
+                boardState: {
+                    ...state.boardState,
+                    selected: selectAction.position
+                }
             }
         }
 
-        case GameBoardActionType.INIT : {
-            return vsComputerInitialState;
+        case GameActionType.APPLY_SERVER_STATE : {
+            let updateAction = action as ApplyServerStateAction;
+            // No need to perform any validation on new server state
+            // It's safe not to remember the selected piece for now
+            return updateAction.newState;
         }
-        
+
         default:
             return state;
     }
@@ -87,13 +107,13 @@ export function gameBoardReducer(state: GameBoardState = vsComputerInitialState,
 function calculateBoardOnMove(state: GameBoardState, move: MovePieceAction): PointState[][] {
     let result = clone(state.board);
     result[move.from.y][move.from.x] = null;
-    result[move.to.y][move.to.x] = state.turn;
+    result[move.to.y][move.to.x] = state.currentTurn;
     return result;
 }
 
 function calculateBoardOnPut(state: GameBoardState, put: PutPieceAction): PointState[][] {
     let result = clone(state.board);
-    result[put.position.y][put.position.x] = state.turn;
+    result[put.position.y][put.position.x] = state.currentTurn;
     return result;
 }
 
@@ -106,6 +126,9 @@ function clone(array: PointState[][]): PointState[][] {
     return copy;
 }
 
-function other(player: PlayerTurn){
+function other(player: PlayerTurn | null){
+    if(player == null){
+        return null;
+    }
     return player === PlayerTurn.ONE ? PlayerTurn.TWO : PlayerTurn.ONE;
 }

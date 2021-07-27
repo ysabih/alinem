@@ -8,7 +8,10 @@ export function checkValidMove(gameState: GameBoardState, move: MovePieceAction)
     
 }
 
-export function isWinner(board: PointState[][], currentPlayer: PlayerTurn): boolean{
+export function isWinner(board: PointState[][], currentPlayer: PlayerTurn | null): boolean{
+    if(currentPlayer == null){
+        return false;
+    }
     if(board.length > 3){
         throw new Error(`Calculating winner on ${board.length}-piece board not implemented`);
     }
@@ -50,7 +53,7 @@ export function isPlayable(gameState: GameBoardState, position: Point): boolean{
         }
         case GameMode.MOVE: {
             let positionState: PointState = getPositionState(gameState.board, position);
-            if( positionState === gameState.turn){
+            if( positionState === gameState.currentTurn){
                 return true;
             }
             let selected: Point|null = gameState.selected;
