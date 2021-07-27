@@ -4,7 +4,6 @@ using Alinem.Logic;
 using Alinem.Models;
 using Microsoft.AspNetCore.SignalR;
 
-
 namespace Alinem.Hubs
 {
 	public class GameHub : Hub<IGameClient>
@@ -20,16 +19,20 @@ namespace Alinem.Hubs
 			this.gameAI = gameAI;
 		}
 
-		public Task InitGame(InitGameRequest request)
+		[HubMethodName("InitGame")]
+		public async Task<GameState> InitGame(InitGameRequest request)
 		{
-			if(request.GameType != GameType.VS_COMPUTER)
+			await Task.Delay(2500).ConfigureAwait(false);
+
+			if (request.GameType != GameType.VS_COMPUTER)
 			{
 				throw new NotImplementedException("Only games with computer are supported");
 			}
 
 			var player = new Player()
 			{
-				Id = ExtractUserIdFromContext(),
+				//TODO: Extract/Generate an id properly, Id = ExtractUserIdFromContext(),
+				Id = request.RequesterPlayerName,
 				Name = request.RequesterPlayerName,
 				Type = PlayerType.HUMAN
 			};
@@ -62,9 +65,10 @@ namespace Alinem.Hubs
 				throw new ArgumentException($"Game with Id {player.Id} already exists, it started at {existing.StartTimeUtc} UTC");
 			}
 
-			return Task.CompletedTask;
+			return gameState;
 		}
 
+		[HubMethodName("SendGameAction")]
 		public async Task<GameBoardState> SendGameAction(GameActionRequest actionRequest)
 		{
 			string userId = ExtractUserIdFromContext();
@@ -102,11 +106,9 @@ namespace Alinem.Hubs
 			else
 			{
 				// update other player who is current player after updating state
-				await Clients.User(player.Id).ReceiveGameStateUpdate(gameState.BoardState);
+				await Clients.User(player.Id).ReceiveGameStateUpdate(gameState.BoardState).ConfigureAwait(false);
 				return newState;
 			}
-
-			//return Task.CompletedTask;
 		}
 
 		public Task ReceiveGameStateUpdate(GameBoardState gameBoardState)
