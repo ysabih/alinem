@@ -1,13 +1,13 @@
 import React from "react";
 import { connect } from "react-redux";
 import { backendService } from "../server/backendService";
-import { GameActionRequest, PutPieceAction } from "../server/types";
+import { GameActionRequest } from "../server/types";
 import { ApplicationState } from "../store";
-import { addPiece, applyGameBoardState, appyGameState, movePiece, selectPiece } from "../store/gameBoard/actions";
-import { GameBoardState, GameMode, GameState, PlayerTurn, Point, PointState } from "../store/gameBoard/types";
+import { addPiece, applyGameBoardState, movePiece, selectPiece } from "../store/gameBoard/actions";
+import { GameMode, GameState, PlayerTurn, Point, PointState } from "../store/gameBoard/types";
 import { setBlockingUI } from "../store/ui/actions";
 import { UserState } from "../store/user/types";
-import { areEquivalent, runBlockingAsync } from "../utils/componentHelpers";
+import { runBlockingAsync } from "../utils/componentHelpers";
 import { isPlayable, getPositionState } from "../utils/gameRulesHelpers";
 
 interface StateProps {

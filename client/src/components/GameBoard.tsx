@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { connect } from 'react-redux';
-import { GameBoardState, GameState, GameType, PlayerTurn, PlayerType, PointState} from '../store/gameBoard/types';
+import { GameBoardState, GameState, GameType, PlayerTurn, PointState} from '../store/gameBoard/types';
 import { ApplicationState} from '../store/index'
 import GamePosition from './GamePosition';
 import { UserState } from '../store/user/types';
@@ -8,7 +8,7 @@ import { backendService } from '../server/backendService'
 import LoadingSpinner from './LoadingSpinner';
 import { InitGameRequest } from '../server/types';
 import { appyGameState } from '../store/gameBoard/actions';
-import { BlockingUIState, SetBlockingUIAction } from '../store/ui/types';
+import { BlockingUIState } from '../store/ui/types';
 import { setBlockingUI } from '../store/ui/actions';
 import { runBlockingAsync } from '../utils/componentHelpers';
 
@@ -32,6 +32,7 @@ function GameBoard(props: Props) {
     // Init game on server
     useEffect(() => {
         runBlockingAsync(initializeAsync, "Initializing new game...", props.setBlockingUI);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     async function initializeAsync() {
