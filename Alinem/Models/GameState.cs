@@ -4,7 +4,7 @@ namespace Alinem.Models
 {
 	public class GameState
 	{
-		public Guid Id { get; set; }
+		public string Id { get; set; }
 		public DateTime StartTimeUtc { get; set; }
 		public Player Player1 { get; set; }
 		public Player Player2 { get; set; }
@@ -48,8 +48,8 @@ namespace Alinem.Models
 
 	public struct Point
 	{
-		public byte X { get; }
-		public byte Y { get; }
+		public byte X { get; set; }
+		public byte Y { get; set; }
 
 		public Point(byte x, byte y)
 		{

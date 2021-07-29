@@ -8,7 +8,7 @@ namespace Alinem.Logic
 	{
 		public Player ComputerUser { get; }
 		public ConcurrentDictionary<string, Player> Users { get; }
-		ConcurrentDictionary<Guid, GameState> Games { get; }
+		ConcurrentDictionary<string, GameState> Games { get; }
 		public int DefaultGameDifficulty { get; }
 	}
 }

@@ -1,14 +1,22 @@
 import { isWinner, checkValidMove, checkValidPut, getPositionState } from '../../utils/gameRulesHelpers';
 import {PutPieceAction, GameAction, GameActionType, 
-        GameBoardState, GameMode, MovePieceAction, PlayerTurn, PointState, SelectPieceAction, ApplyServerStateAction, GameState, UserConnectionState} from './types';
+        GameBoardState, GameMode, MovePieceAction, PlayerTurn, PointState, SelectPieceAction, ApplyGameStateAction, GameState, UserConnectionState, PlayerType, ApplyBoardStateAction} from './types';
 
 const BOARD_ROW_LENGTH = 3;
 
 const vsComputerInitialState: GameState = {
-    id: null,
-    startTimtUtc: null,
-    player1: null,
-    player2: null,
+    id: "",
+    startTimtUtc: new Date(0),
+    player1: {
+        id: "",
+        name: "",
+        type: PlayerType.COMPUTER
+    },
+    player2: {
+        id: "",
+        name: "",
+        type: PlayerType.COMPUTER
+    },
     userConnectionsState: [
         UserConnectionState.NOT_CONNECTED,
         UserConnectionState.NOT_CONNECTED
@@ -37,7 +45,7 @@ export function gameReducer(state: GameState = vsComputerInitialState, action: G
             let win: boolean = isWinner(updatedBoard, state.boardState.currentTurn);
             let nextTurn: number = win ? state.boardState.turnNumber : state.boardState.turnNumber + 1;
             let nextPlayer: PlayerTurn | null = win ? state.boardState.currentTurn : other(state.boardState.currentTurn);
-            return  {
+            return {
                 ...state,
                 boardState: {
                     ...state.boardState,
@@ -92,10 +100,16 @@ export function gameReducer(state: GameState = vsComputerInitialState, action: G
             }
         }
 
-        case GameActionType.APPLY_SERVER_STATE : {
-            let updateAction = action as ApplyServerStateAction;
-            // No need to perform any validation on new server state
-            // It's safe not to remember the selected piece for now
+        case GameActionType.APPLY_BAORD_STATE: {
+            let updateAction = action as ApplyBoardStateAction;
+            return {
+                ...state,
+                boardState: updateAction.newBoardState
+            }
+        }
+
+        case GameActionType.APPLY_GAME_STATE : {
+            let updateAction = action as ApplyGameStateAction;
             return updateAction.newState;
         }
 

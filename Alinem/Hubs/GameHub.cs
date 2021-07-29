@@ -3,6 +3,8 @@ using System.Threading.Tasks;
 using Alinem.Logic;
 using Alinem.Models;
 using Microsoft.AspNetCore.SignalR;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace Alinem.Hubs
 {
@@ -20,9 +22,9 @@ namespace Alinem.Hubs
 		}
 
 		[HubMethodName("InitGame")]
-		public async Task<GameState> InitGame(InitGameRequest request)
+		public async Task<GameState> InitGameAsync(InitGameRequest request)
 		{
-			await Task.Delay(2500).ConfigureAwait(false);
+			await Task.Delay(500).ConfigureAwait(false);
 
 			if (request.GameType != GameType.VS_COMPUTER)
 			{
@@ -39,7 +41,7 @@ namespace Alinem.Hubs
 
 			var gameState = new GameState
 			{
-				Id = Guid.NewGuid(),
+				Id = Guid.NewGuid().ToString("N"),
 				StartTimeUtc = DateTime.UtcNow,
 				
 				Player1 = request.RequesterTurn == PlayerTurn.ONE ? player : serverState.ComputerUser,
@@ -69,11 +71,9 @@ namespace Alinem.Hubs
 		}
 
 		[HubMethodName("SendGameAction")]
-		public async Task<GameBoardState> SendGameAction(GameActionRequest actionRequest)
+		public async Task<GameBoardState> SendGameActionAsync(GameActionRequest actionRequest)
 		{
-			string userId = ExtractUserIdFromContext();
-			//TODO: avoid modifying object
-			actionRequest.UserId = userId;
+			await Task.Delay(500).ConfigureAwait(false);
 
 			GameState gameState;
 			if(!serverState.Games.TryGetValue(actionRequest.GameId,out gameState))
@@ -90,6 +90,11 @@ namespace Alinem.Hubs
 			// Update state in server
 			gameState.BoardState = newState;
 
+			if(newState.Winner != null) /*Game Over*/
+			{
+				return newState;
+			}
+
 			Player player = GameLogicUtils.GetCurrentPlayer(gameState);
 			if(player.Type == PlayerType.COMPUTER)
 			{
@@ -97,7 +102,7 @@ namespace Alinem.Hubs
 				// Get computer's move and send new state to player
 				GameAction computerAction = gameAI.CalculateComputerMove(gameState.BoardState, difficulty);
 
-				GameBoardState afterComputerMove = gameLogic.ApplyAction(gameState.BoardState, actionRequest.Action);
+				GameBoardState afterComputerMove = gameLogic.ApplyAction(gameState.BoardState, computerAction);
 				// Update state in server
 				gameState.BoardState = afterComputerMove;
 
@@ -126,11 +131,6 @@ namespace Alinem.Hubs
 				TurnNumber = 1,
 				GameMode = GameMode.PUT
 			};
-		}
-
-		private string ExtractUserIdFromContext()
-		{
-			return Context.UserIdentifier;
 		}
 	}
 }

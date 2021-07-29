@@ -41,23 +41,13 @@ class BackendService {
     }
 
     async initGameAsync(request: InitGameRequest) {
-        try{
-            let response = await this.connection.invoke(ServerMethodNames.initGame, request);
-            return response as GameState;
-        }
-        catch(error){
-            console.log("Failed to initialize game, " + error);
-        }
+        let response = await this.connection.invoke(ServerMethodNames.initGame, request);
+        return response as GameState;
     }
 
-    async sendGameAction(request: GameActionRequest) {
-        try{
-            let response = await this.connection.invoke(ServerMethodNames.sendGameAction, request);
-            return response as GameBoardState;
-        }
-        catch(error){
-            console.log("Failed to send game action, " + error);
-        }
+    async sendGameActionAsync(request: GameActionRequest) {
+        let response = await this.connection.invoke(ServerMethodNames.sendGameAction, request);
+        return response as GameBoardState;
     }
 }
 

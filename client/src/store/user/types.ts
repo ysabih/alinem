@@ -1,5 +1,6 @@
 export enum UserActionType {
-    SET_NAME = "user/setName"
+    SET_NAME = "user/setName",
+    SET_ID = "user/setId",
 }
 
 export interface UserAction {
@@ -10,7 +11,12 @@ export interface SetUserNameAction extends UserAction{
     readonly newName: string
 }
 
+export interface SetUserIdAction extends UserAction {
+    readonly id: string
+}
+
 export interface UserState {
+    id: string
     name: string
     isNameSet: boolean
 }

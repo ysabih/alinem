@@ -15,13 +15,13 @@ namespace Alinem.Logic
 		};
 		private static readonly ConcurrentDictionary<string, Player> Users = new ConcurrentDictionary<string, Player>(
 			new Dictionary<string, Player>() { { ComputerPlayer.Id, ComputerPlayer } });
-		private static readonly ConcurrentDictionary<Guid, GameState> Games = new ConcurrentDictionary<Guid, GameState>();
+		private static readonly ConcurrentDictionary<string, GameState> Games = new ConcurrentDictionary<string, GameState>();
 
 		private static readonly int DefaultGameDifficulty = 3;
 
 		Player IServerState.ComputerUser => ComputerPlayer;
 		ConcurrentDictionary<string, Player> IServerState.Users => Users;
-		ConcurrentDictionary<Guid, GameState> IServerState.Games => Games;
+		ConcurrentDictionary<string, GameState> IServerState.Games => Games;
 		int IServerState.DefaultGameDifficulty => DefaultGameDifficulty;
 	}
 }

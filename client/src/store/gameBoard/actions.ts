@@ -1,9 +1,16 @@
-import {GameActionType, PutPieceAction, MovePieceAction, Point, SelectPieceAction, ApplyServerStateAction, GameBoardState, GameState} from './types';
+import {GameActionType, PutPieceAction, MovePieceAction, Point, SelectPieceAction, ApplyGameStateAction, GameState, GameBoardState, ApplyBoardStateAction} from './types';
 
-export function applyServerState(state: GameState): ApplyServerStateAction {
+export function appyGameState(state: GameState): ApplyGameStateAction {
     return {
-        type: GameActionType.APPLY_SERVER_STATE,
+        type: GameActionType.APPLY_GAME_STATE,
         newState: state
+    }
+}
+
+export function applyGameBoardState(state: GameBoardState): ApplyBoardStateAction {
+    return {
+        type: GameActionType.APPLY_BAORD_STATE,
+        newBoardState: state
     }
 }
 

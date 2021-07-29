@@ -1,5 +1,6 @@
 export enum GameActionType {
-    APPLY_SERVER_STATE = "game/applyServerState",
+    APPLY_GAME_STATE = "game/applyGameState",
+    APPLY_BAORD_STATE = "game/applyBoardState",
     ADD_PIECE = "gameBoard/addPiece",
     MOVE_PIECE = "gameBoard/MovePiece",
     SELECT_PIECE = "gameBoard/SelectPiece"
@@ -24,10 +25,10 @@ export enum PlayerType {
 export type PointState = PlayerTurn | null
 
 export interface GameState {
-    id: string | null,
-    startTimtUtc: Date | null,
-    player1: Player | null,
-    player2: Player | null,
+    id: string,
+    startTimtUtc: Date,
+    player1: Player,
+    player2: Player,
     boardState: GameBoardState
     userConnectionsState: UserConnectionState[]
 }
@@ -61,10 +62,15 @@ export interface GameAction {
     readonly type: GameActionType
 }
 
-// Used to update state following notification from server
-export interface ApplyServerStateAction extends GameAction {
-    type: GameActionType.APPLY_SERVER_STATE,
+// Used to update state following game initialization on server
+export interface ApplyGameStateAction extends GameAction {
+    type: GameActionType.APPLY_GAME_STATE,
     readonly newState: GameState
+}
+
+export interface ApplyBoardStateAction extends GameAction {
+    type: GameActionType.APPLY_BAORD_STATE,
+    readonly newBoardState: GameBoardState
 }
 
 export interface PutPieceAction extends GameAction {

@@ -22,7 +22,7 @@ namespace Alinem.Logic
 			{
 				// Get All empty positions and choose a random one
 				List<Point> emptyPositions = GameLogicUtils.GetAllEmptyPositions(gameState.Board);
-				Point chosen = emptyPositions[rand.Next(0, emptyPositions.Count + 1)];
+				Point chosen = emptyPositions[rand.Next(0, emptyPositions.Count)];
 				return new PutPieceAction { Position = chosen };
 			}
 			else if(gameState.GameMode == GameMode.MOVE)
@@ -42,7 +42,7 @@ namespace Alinem.Logic
 							moves.Add(new MovePieceAction { From = piece, To = emptyPosition });
 					}
 				}
-				return moves[rand.Next(0, emptyPositions.Count + 1)];
+				return moves[rand.Next(0, emptyPositions.Count)];
 			}
 			else
 			{

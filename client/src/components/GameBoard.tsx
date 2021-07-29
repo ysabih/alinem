@@ -7,14 +7,19 @@ import { UserState } from '../store/user/types';
 import { backendService } from '../server/backendService'
 import LoadingSpinner from './LoadingSpinner';
 import { InitGameRequest } from '../server/types';
-import { applyServerState } from '../store/gameBoard/actions';
+import { appyGameState } from '../store/gameBoard/actions';
+import { BlockingUIState, SetBlockingUIAction } from '../store/ui/types';
+import { setBlockingUI } from '../store/ui/actions';
+import { runBlockingAsync } from '../utils/componentHelpers';
 
 interface StateProps {
+    blockingUI: BlockingUIState,
     game: GameState
     user: UserState
 }
 interface DispatchProps {
-    applyServerState: typeof applyServerState
+    applyServerState: typeof appyGameState,
+    setBlockingUI: typeof setBlockingUI
 }
 interface OwnProps {
     gameType: GameType
@@ -23,11 +28,10 @@ type Props = StateProps & DispatchProps & OwnProps;
 
 function GameBoard(props: Props) {
     const [initialized, setInitialized] = useState(false);
-    const [loading, setLoading] = useState(false);
 
     // Init game on server
     useEffect(() => {
-        runBlockingAsync(initializeAsync);
+        runBlockingAsync(initializeAsync, "Initializing new game...", props.setBlockingUI);
     }, []);
 
     async function initializeAsync() {
@@ -43,27 +47,22 @@ function GameBoard(props: Props) {
             // TODO: Make this configurable
             requesterTurn: PlayerTurn.ONE
         }
-        let boardState = await backendService.initGameAsync(initRequest);
-        if(!boardState) {
-            throw new Error("New board state cannot be falsy, value: "+boardState);
+        let gameState = await backendService.initGameAsync(initRequest);
+        if(!gameState) {
+            throw new Error("New board state cannot be falsy, value: " + gameState);
         }
-        console.log("Initialized game on server, booard state: ", boardState);
+        console.debug("Initialized game on server, booard state: ", gameState);
 
-        props.applyServerState(boardState);
+        props.applyServerState(gameState);
 
         setInitialized(true);
     }
 
-    function runBlockingAsync(func: () => Promise<void>) {
-        setLoading(true);
-        func().then(() => setLoading(false));
-    }
-
     return (
         <>
-            { loading ? <LoadingSpinner/> : <></> }
-            <div style={{opacity: loading? 0.5 : 1}}>
-                <GameHUD game={props.game} user={props.user} />
+            { props.blockingUI.blocking ? <LoadingSpinner message={props.blockingUI.blockingMessage} /> : <></> }
+            <div style={{opacity: props.blockingUI.blocking? 0.2 : 1}}>
+                <GameHUD {...props} />
                 <Board board={props.game.boardState.board} />
                 <div className='container' style={{marginTop: 24}}>
                     <div className='row justify-content-center'>
@@ -136,12 +135,14 @@ function Row(rowIndex: number, rowLength: number) {
 
 function mapState(state: ApplicationState) : StateProps {
     return {
+        blockingUI: state.blockingUI,
         game: state.game,
         user: state.user
     };
 }
 const mapDispatch : DispatchProps = {
-    applyServerState: applyServerState
+    applyServerState: appyGameState,
+    setBlockingUI: setBlockingUI
 }
 export default connect<StateProps, DispatchProps, OwnProps, ApplicationState>(
     mapState,
