@@ -23,7 +23,7 @@ namespace Alinem.IntegrationTests
 			{
 				GameType = GameType.VS_COMPUTER,
 				RequesterPlayerName = "IwillGrillYourMother",
-				RequesterTurn = PlayerTurn.ONE
+				UserTurn = PlayerTurn.ONE
 			};
 
 			var connection = new HubConnectionBuilder()

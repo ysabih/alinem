@@ -22,6 +22,7 @@ class BackendService {
         }
         this.connection = new HubConnectionBuilder()
         .withUrl(`${BacknedUrl}/${GamehubRoute}`)
+        .withAutomaticReconnect()
         .configureLogging(LogLevel.Information)
         .build();
 

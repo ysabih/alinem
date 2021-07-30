@@ -11,10 +11,6 @@ export interface SetUserNameAction extends UserAction{
     readonly newName: string
 }
 
-export interface SetUserIdAction extends UserAction {
-    readonly id: string
-}
-
 export interface UserState {
     id: string
     name: string

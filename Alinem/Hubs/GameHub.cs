@@ -33,9 +33,8 @@ namespace Alinem.Hubs
 
 			var player = new Player()
 			{
-				//TODO: Extract/Generate an id properly, Id = ExtractUserIdFromContext(),
-				Id = request.RequesterPlayerName,
-				Name = request.RequesterPlayerName,
+				Id = request.User.Id,
+				Name = request.User.Name,
 				Type = PlayerType.HUMAN
 			};
 
@@ -44,8 +43,8 @@ namespace Alinem.Hubs
 				Id = Guid.NewGuid().ToString("N"),
 				StartTimeUtc = DateTime.UtcNow,
 				
-				Player1 = request.RequesterTurn == PlayerTurn.ONE ? player : serverState.ComputerUser,
-				Player2 = request.RequesterTurn == PlayerTurn.TWO ? player : serverState.ComputerUser,
+				Player1 = request.UserTurn == PlayerTurn.ONE ? player : serverState.ComputerUser,
+				Player2 = request.UserTurn == PlayerTurn.TWO ? player : serverState.ComputerUser,
 				BoardState = InitializeGameBoard(request),
 				UserConnectionsState = new UserConnectionState[]
 				{
@@ -125,7 +124,7 @@ namespace Alinem.Hubs
 		{
 			return new GameBoardState
 			{
-				CurrentTurn = request.RequesterTurn,
+				CurrentTurn = request.UserTurn,
 				Board = new PlayerTurn?[3, 3],
 				Winner = null,
 				TurnNumber = 1,

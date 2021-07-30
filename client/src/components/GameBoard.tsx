@@ -44,9 +44,12 @@ function GameBoard(props: Props) {
         // initiate game on server first
         let initRequest: InitGameRequest = {
             gameType: props.gameType,
-            requesterPlayerName: props.user.name,
+            user: {
+                id: props.user.id,
+                name: props.user.name
+            },
             // TODO: Make this configurable
-            requesterTurn: PlayerTurn.ONE
+            userTurn: PlayerTurn.ONE
         }
         let gameState = await backendService.initGameAsync(initRequest);
         if(!gameState) {

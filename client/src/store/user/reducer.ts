@@ -1,9 +1,9 @@
-import {UserState, UserAction, UserActionType, SetUserNameAction, SetUserIdAction} from './types'
+import {UserState, UserAction, UserActionType, SetUserNameAction} from './types'
+import { v4 as uuidv4 } from 'uuid';
 
-const userName: string = getRandomName();
 const initialState: UserState= {
-    id: userName,
-    name : userName,
+    id: uuidv4(),
+    name : getRandomName(),
     isNameSet: false
 }
 
@@ -17,13 +17,6 @@ export function userReducer(state: UserState = initialState, action: UserAction)
                 isNameSet: true
             }
         }
-        case UserActionType.SET_ID: {
-            let setIdAction = action as SetUserIdAction;
-            return {
-                ...state,
-                id: setIdAction.id
-            }
-        }
         default: {
             return state;
         }
@@ -31,11 +24,6 @@ export function userReducer(state: UserState = initialState, action: UserAction)
 }
 
 function getRandomName() : string {
-   var result           = 'Guest_';
-   var characters       = '0123456789';
-   var charactersLength = 12;
-   for ( var i = 0; i < charactersLength; i++ ) {
-      result += characters.charAt(Math.floor(Math.random() * charactersLength));
-   }
-   return result;
+   let id: string = uuidv4();
+   return 'Guest_'+id.substring(0,6);
 }
