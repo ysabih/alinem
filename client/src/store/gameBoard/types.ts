@@ -20,8 +20,8 @@ export enum GameMode {
     MOVE = 'MOVE'
 }
 export enum PlayerType {
-    HUMAN,
-    COMPUTER
+    HUMAN = "HUMAN",
+    COMPUTER = "COMPUTER"
 }
 export type PointState = PlayerTurn | null
 
