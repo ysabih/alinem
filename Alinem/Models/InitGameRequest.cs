@@ -21,10 +21,12 @@ namespace Alinem.Models
 	//	public string UserId { get; set; }
 	//}
 
-	//public class ResetGameRequest
-	//{
-	//	public string GameId { get; set; }
-	//}
+	public class ResetGameRequest
+	{
+		public string GameId { get; set; }
+		public string UserId { get; set; }
+		public PlayerTurn UserTurn { get; set; }
+	}
 
 	public class GameActionRequest
 	{

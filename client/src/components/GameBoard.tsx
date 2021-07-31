@@ -1,13 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { connect } from 'react-redux';
-import { GameBoardState, GameState, GameType, PlayerTurn, PointState} from '../store/gameBoard/types';
+import { GameBoardState, GameState, GameType, PlayerTurn, PlayerType, PointState} from '../store/gameBoard/types';
 import { ApplicationState} from '../store/index'
 import GamePosition from './GamePosition';
 import { UserState } from '../store/user/types';
 import { backendService } from '../server/backendService'
 import LoadingSpinner from './LoadingSpinner';
-import { InitGameRequest } from '../server/types';
-import { appyGameState } from '../store/gameBoard/actions';
+import { InitGameRequest, ResetGameRequest } from '../server/types';
+import { applyGameBoardState, applyGameState } from '../store/gameBoard/actions';
 import { BlockingUIState } from '../store/ui/types';
 import { setBlockingUI } from '../store/ui/actions';
 import { runBlockingAsync } from '../utils/componentHelpers';
@@ -18,7 +18,8 @@ interface StateProps {
     user: UserState
 }
 interface DispatchProps {
-    applyServerState: typeof appyGameState,
+    applyGameState: typeof applyGameState,
+    applyGameBoardState: typeof applyGameBoardState,
     setBlockingUI: typeof setBlockingUI
 }
 interface OwnProps {
@@ -57,7 +58,7 @@ function GameBoard(props: Props) {
         }
         console.debug("Initialized game on server, booard state: ", gameState);
 
-        props.applyServerState(gameState);
+        props.applyGameState(gameState);
 
         setInitialized(true);
     }
@@ -70,12 +71,32 @@ function GameBoard(props: Props) {
                 <Board board={props.game.boardState.board} />
                 <div className='container' style={{marginTop: 24}}>
                     <div className='row justify-content-center'>
-                        <button className='btn btn-lg btn-primary'>RESET</button>
+                        <button className='btn btn-lg btn-primary' disabled={!canResetGame(props)} onClick={() => resetCurrentGame(props)}>RESET</button>
                     </div>
                 </div>
             </div>
         </>
     );
+}
+
+function resetCurrentGame(props: Props) {
+    runBlockingAsync(async () => {
+        let request: ResetGameRequest = {
+            gameId: props.game.id,
+            userId: props.user.id,
+            userTurn: PlayerTurn.ONE
+        }
+        let newBoardState = await backendService.resetGameAsync(request);
+        props.applyGameBoardState(newBoardState);
+    }, "Resetting game...", props.setBlockingUI);
+}
+
+function canResetGame(props: Props): boolean {
+    // Only games vs computer and finished games can be reset
+    let vsComputer = props.game.player1.type === PlayerType.COMPUTER || props.game.player2.type === PlayerType.COMPUTER;
+    let connected = backendService.isConnected();
+    let justStarted = props.game.boardState.turnNumber <= 1;
+    return (vsComputer || props.game.boardState.winner != null) && connected && !justStarted;
 }
 
 function GameHUD(props: StateProps){
@@ -145,7 +166,8 @@ function mapState(state: ApplicationState) : StateProps {
     };
 }
 const mapDispatch : DispatchProps = {
-    applyServerState: appyGameState,
+    applyGameState: applyGameState,
+    applyGameBoardState: applyGameBoardState,
     setBlockingUI: setBlockingUI
 }
 export default connect<StateProps, DispatchProps, OwnProps, ApplicationState>(

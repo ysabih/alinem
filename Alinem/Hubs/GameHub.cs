@@ -45,7 +45,7 @@ namespace Alinem.Hubs
 				
 				Player1 = request.UserTurn == PlayerTurn.ONE ? player : serverState.ComputerUser,
 				Player2 = request.UserTurn == PlayerTurn.TWO ? player : serverState.ComputerUser,
-				BoardState = InitializeGameBoard(request),
+				BoardState = InitializeGameBoard(request.UserTurn),
 				UserConnectionsState = new UserConnectionState[]
 				{
 					// Requester is connected and computer is always connected
@@ -115,21 +115,55 @@ namespace Alinem.Hubs
 			}
 		}
 
+		[HubMethodName("ResetGame")]
+		public Task<GameBoardState> ResetGameAsync(ResetGameRequest request)
+		{
+			GameState gameState;
+			bool gameExists = serverState.Games.TryGetValue(request.GameId, out gameState);
+			bool validUserId = false;  
+			if(gameExists)
+			{
+				validUserId = gameState.Player1.Id == request.UserId || gameState.Player2.Id == request.UserId;
+			}
+			if(!gameExists || !validUserId)
+			{
+				throw new ArgumentException($"Game with id {request.GameId} not found");
+			}
+			
+			if(!GameCanBeReset(gameState))
+			{
+				throw new ArgumentException("Game cannot be reset, only games vs computer and finished games can be reset");
+			}
+
+			gameState.BoardState = InitializeGameBoard(request.UserTurn);
+			return Task.FromResult(gameState.BoardState);
+		}
+
 		public Task ReceiveGameStateUpdate(GameBoardState gameBoardState)
 		{
 			return Task.CompletedTask;
 		}
 
-		private static GameBoardState InitializeGameBoard(InitGameRequest request)
+		private static GameBoardState InitializeGameBoard(PlayerTurn firstTurn)
 		{
 			return new GameBoardState
 			{
-				CurrentTurn = request.UserTurn,
+				CurrentTurn = firstTurn,
 				Board = new PlayerTurn?[3, 3],
 				Winner = null,
 				TurnNumber = 1,
 				GameMode = GameMode.PUT
 			};
 		}
+
+		private static bool GameCanBeReset(GameState gameState)
+		{
+			bool isVsComputer = gameState.Player1.Type == PlayerType.COMPUTER || gameState.Player2.Type == PlayerType.COMPUTER;
+			bool gameOver = gameState.BoardState.Winner != null;
+
+			return isVsComputer || gameOver;
+		}
+
+		
 	}
 }

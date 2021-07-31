@@ -80,7 +80,7 @@ async function onPositionClicked(props: Props){
                 console.debug("Received new board state from server: ", response);
                 props.applyGameBoardState(response);
 
-            }, "waiting for opponent...", props.setBlockingUI);
+            }, "Sending move...", props.setBlockingUI);
             break;
         }
         case GameMode.MOVE: {
@@ -112,7 +112,7 @@ async function onPositionClicked(props: Props){
                     console.debug("Received new board state from server: ", response);
                     props.applyGameBoardState(response);
                        
-                }, "waiting for opponent...", props.setBlockingUI);
+                }, "Sending move...", props.setBlockingUI);
             }
             break;
         }

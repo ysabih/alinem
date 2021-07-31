@@ -1,6 +1,6 @@
 import {GameActionType, PutPieceAction, MovePieceAction, Point, SelectPieceAction, ApplyGameStateAction, GameState, GameBoardState, ApplyBoardStateAction} from './types';
 
-export function appyGameState(state: GameState): ApplyGameStateAction {
+export function applyGameState(state: GameState): ApplyGameStateAction {
     return {
         type: GameActionType.APPLY_GAME_STATE,
         newState: state

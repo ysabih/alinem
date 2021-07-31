@@ -6,6 +6,12 @@ export interface InitGameRequest {
     gameType: GameType
 }
 
+export interface ResetGameRequest {
+    gameId: string,
+    userId: string,
+    userTurn: PlayerTurn
+}
+
 export interface User {
     id: string,
     name: string

@@ -1,53 +1,56 @@
-import { HubConnection, HubConnectionBuilder, LogLevel } from '@microsoft/signalr'
+import { HubConnection, HubConnectionBuilder, HubConnectionState, LogLevel } from '@microsoft/signalr'
 import { GameBoardState, GameState } from '../store/gameBoard/types';
-import { GameActionRequest, InitGameRequest } from './types';
+import { GameActionRequest, InitGameRequest, ResetGameRequest } from './types';
 
 const BacknedUrl = "http://localhost:5000";
 const GamehubRoute = "gamehub"
 
 const ServerMethodNames = {
     initGame: "InitGame",
+    resetGame: "ResetGame",
     sendGameAction: "SendGameAction",
     receiveGameStateUpdate: "ReceiveGameStateUpdate",
 }
 
 class BackendService {
 
-    connection!: HubConnection;
-    connected: boolean = false;
+    _connection!: HubConnection;
 
     async connectAsync() {
-        if(this.connected){
+        if(this._connection != null && this.isConnected()){
             return;
         }
-        this.connection = new HubConnectionBuilder()
+        this._connection = new HubConnectionBuilder()
         .withUrl(`${BacknedUrl}/${GamehubRoute}`)
         .withAutomaticReconnect()
         .configureLogging(LogLevel.Information)
         .build();
 
         try {
-            await this.connection.start();
+            await this._connection.start();
             console.log("Connected to SignalR server");
         }
         catch(error) {
             console.error("Failed to connect, "+ error);
         }
+    }
 
-        this.connection.onclose(error => {
-            console.log(`Connection closed with error: ${error}`);
-            this.connected = false;
-        });
-        this.connected = true;
+    isConnected(): boolean {
+        return this._connection && this._connection.state === HubConnectionState.Connected;
     }
 
     async initGameAsync(request: InitGameRequest) {
-        let response = await this.connection.invoke(ServerMethodNames.initGame, request);
+        let response = await this._connection.invoke(ServerMethodNames.initGame, request);
         return response as GameState;
     }
 
     async sendGameActionAsync(request: GameActionRequest) {
-        let response = await this.connection.invoke(ServerMethodNames.sendGameAction, request);
+        let response = await this._connection.invoke(ServerMethodNames.sendGameAction, request);
+        return response as GameBoardState;
+    }
+
+    async resetGameAsync(request: ResetGameRequest) {
+        let response = await this._connection.invoke(ServerMethodNames.resetGame, request);
         return response as GameBoardState;
     }
 }
