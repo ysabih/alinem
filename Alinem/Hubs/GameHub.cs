@@ -54,11 +54,8 @@ namespace Alinem.Hubs
 				}
 			};
 
-			if(!serverState.Users.TryAdd(player.Id, player))
-			{
-				serverState.Users.TryGetValue(player.Id, out var existing);
-				throw new ArgumentException($"User with Id {player.Id} already exists, with name {existing.Name}");
-			}
+			// User can quit game and start a new one in the same session => No need to check if user is already registered
+			serverState.Users.TryAdd(player.Id, player);
 
 			if(!serverState.Games.TryAdd(gameState.Id, gameState))
 			{
