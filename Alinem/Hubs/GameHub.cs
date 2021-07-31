@@ -113,8 +113,10 @@ namespace Alinem.Hubs
 		}
 
 		[HubMethodName("ResetGame")]
-		public Task<GameBoardState> ResetGameAsync(ResetGameRequest request)
+		public async Task<GameBoardState> ResetGameAsync(ResetGameRequest request)
 		{
+			await Task.Delay(500).ConfigureAwait(false);
+
 			GameState gameState;
 			bool gameExists = serverState.Games.TryGetValue(request.GameId, out gameState);
 			bool validUserId = false;  
@@ -133,7 +135,34 @@ namespace Alinem.Hubs
 			}
 
 			gameState.BoardState = InitializeGameBoard(request.UserTurn);
-			return Task.FromResult(gameState.BoardState);
+			//return Task.FromResult(gameState.BoardState);
+			return gameState.BoardState;
+		}
+
+		[HubMethodName("QuitGame")]
+		public Task QuitGameAsync(QuitGameRequest request)
+		{
+			// If game is vs computer delete it. If it's vs another player, send them notification then delete it.
+			// TODO: Factorize duplicate authorization code
+			GameState gameState;
+			bool gameExists = serverState.Games.TryGetValue(request.GameId, out gameState);
+			bool validUserId = false;
+			if (gameExists)
+			{
+				validUserId = gameState.Player1.Id == request.UserId || gameState.Player2.Id == request.UserId;
+			}
+			if (!gameExists || !validUserId)
+			{
+				throw new ArgumentException($"Game with id {request.GameId} not found");
+			}
+
+			if(!IsVsComputer(gameState))
+			{
+				throw new NotImplementedException("Only games vs computer are supported");
+			}
+
+			serverState.Games.TryRemove(gameState.Id, out _);
+			return Task.CompletedTask;
 		}
 
 		public Task ReceiveGameStateUpdate(GameBoardState gameBoardState)
@@ -155,12 +184,15 @@ namespace Alinem.Hubs
 
 		private static bool GameCanBeReset(GameState gameState)
 		{
-			bool isVsComputer = gameState.Player1.Type == PlayerType.COMPUTER || gameState.Player2.Type == PlayerType.COMPUTER;
+			bool vsComputer = IsVsComputer(gameState);
 			bool gameOver = gameState.BoardState.Winner != null;
 
-			return isVsComputer || gameOver;
+			return vsComputer || gameOver;
 		}
 
-		
+		private static bool IsVsComputer(GameState gameState)
+		{
+			return gameState.Player1.Type == PlayerType.COMPUTER || gameState.Player2.Type == PlayerType.COMPUTER;
+		}
 	}
 }

@@ -6,11 +6,12 @@ import GamePosition from './GamePosition';
 import { UserState } from '../store/user/types';
 import { backendService } from '../server/backendService'
 import LoadingSpinner from './LoadingSpinner';
-import { InitGameRequest, ResetGameRequest } from '../server/types';
-import { applyGameBoardState, applyGameState } from '../store/gameBoard/actions';
+import { InitGameRequest, QuitGameRequest, ResetGameRequest } from '../server/types';
+import { applyGameBoardState, applyGameState, resetGameState } from '../store/gameBoard/actions';
 import { BlockingUIState } from '../store/ui/types';
 import { setBlockingUI } from '../store/ui/actions';
 import { runBlockingAsync } from '../utils/componentHelpers';
+import { Link } from 'react-router-dom';
 
 interface StateProps {
     blockingUI: BlockingUIState,
@@ -19,6 +20,7 @@ interface StateProps {
 }
 interface DispatchProps {
     applyGameState: typeof applyGameState,
+    resetGameState: typeof resetGameState,
     applyGameBoardState: typeof applyGameBoardState,
     setBlockingUI: typeof setBlockingUI
 }
@@ -71,12 +73,24 @@ function GameBoard(props: Props) {
                 <Board board={props.game.boardState.board} />
                 <div className='container' style={{marginTop: 24}}>
                     <div className='row justify-content-center'>
-                        <button className='btn btn-lg btn-primary' disabled={!canResetGame(props)} onClick={() => resetCurrentGame(props)}>RESET</button>
+                        <button className='col col-auto btn btn-lg btn-primary mr-3' disabled={!canResetGame(props)} onClick={() => resetCurrentGame(props)}>RESET</button>
+                        <Link className='col col-auto btn btn-lg btn-primary' to='' onClick={() => quitCurrentGame(props)}>EXIT</Link>
                     </div>
                 </div>
             </div>
         </>
     );
+}
+
+function quitCurrentGame(props: Props) {
+    runBlockingAsync(async () => {
+        let request: QuitGameRequest = {
+            gameId: props.game.id,
+            userId: props.user.id
+        };
+        props.resetGameState();
+        await backendService.quitGameAsync(request);
+    }, "Quitting game...", props.setBlockingUI);
 }
 
 function resetCurrentGame(props: Props) {
@@ -93,10 +107,10 @@ function resetCurrentGame(props: Props) {
 
 function canResetGame(props: Props): boolean {
     // Only games vs computer and finished games can be reset
-    let vsComputer = props.game.player1.type === PlayerType.COMPUTER || props.game.player2.type === PlayerType.COMPUTER;
+    let vsComputer:boolean = props.game.player1.type === PlayerType.COMPUTER || props.game.player2.type === PlayerType.COMPUTER;
     let connected = backendService.isConnected();
-    let justStarted = props.game.boardState.turnNumber <= 1;
-    return (vsComputer || props.game.boardState.winner != null) && connected && !justStarted;
+    let firstTurn = props.game.boardState.turnNumber <= 1;
+    return (vsComputer || props.game.boardState.winner != null) && connected && !firstTurn;
 }
 
 function GameHUD(props: StateProps){
@@ -167,6 +181,7 @@ function mapState(state: ApplicationState) : StateProps {
 }
 const mapDispatch : DispatchProps = {
     applyGameState: applyGameState,
+    resetGameState: resetGameState,
     applyGameBoardState: applyGameBoardState,
     setBlockingUI: setBlockingUI
 }

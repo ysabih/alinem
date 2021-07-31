@@ -3,7 +3,6 @@ import {PutPieceAction, GameAction, GameActionType,
         GameBoardState, GameMode, MovePieceAction, PlayerTurn, PointState, SelectPieceAction, ApplyGameStateAction, GameState, UserConnectionState, PlayerType, ApplyBoardStateAction} from './types';
 
 const BOARD_ROW_LENGTH = 3;
-
 const vsComputerInitialState: GameState = {
     id: "",
     startTimtUtc: new Date(0),
@@ -111,6 +110,10 @@ export function gameReducer(state: GameState = vsComputerInitialState, action: G
         case GameActionType.APPLY_GAME_STATE : {
             let updateAction = action as ApplyGameStateAction;
             return updateAction.newState;
+        }
+
+        case GameActionType.RESET_GAME_STATE: {
+            return vsComputerInitialState
         }
 
         default:

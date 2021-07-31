@@ -12,6 +12,11 @@ export interface ResetGameRequest {
     userTurn: PlayerTurn
 }
 
+export interface QuitGameRequest {
+    gameId: string,
+    userId: string
+}
+
 export interface User {
     id: string,
     name: string

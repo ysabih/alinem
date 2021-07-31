@@ -1,12 +1,13 @@
 import { HubConnection, HubConnectionBuilder, HubConnectionState, LogLevel } from '@microsoft/signalr'
 import { GameBoardState, GameState } from '../store/gameBoard/types';
-import { GameActionRequest, InitGameRequest, ResetGameRequest } from './types';
+import { GameActionRequest, InitGameRequest, QuitGameRequest, ResetGameRequest } from './types';
 
 const BacknedUrl = "http://localhost:5000";
 const GamehubRoute = "gamehub"
 
 const ServerMethodNames = {
     initGame: "InitGame",
+    quitGame: "QuitGame",
     resetGame: "ResetGame",
     sendGameAction: "SendGameAction",
     receiveGameStateUpdate: "ReceiveGameStateUpdate",
@@ -42,6 +43,11 @@ class BackendService {
     async initGameAsync(request: InitGameRequest) {
         let response = await this._connection.invoke(ServerMethodNames.initGame, request);
         return response as GameState;
+    }
+
+    // using send() because it does not wait for response from server
+    quitGameAsync(request: QuitGameRequest) {
+        return this._connection.send(ServerMethodNames.quitGame, request);
     }
 
     async sendGameActionAsync(request: GameActionRequest) {

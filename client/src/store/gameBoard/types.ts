@@ -1,6 +1,7 @@
 export enum GameActionType {
     APPLY_GAME_STATE = "game/applyGameState",
     APPLY_BAORD_STATE = "game/applyBoardState",
+    RESET_GAME_STATE = "game/resetGameState",
     ADD_PIECE = "gameBoard/addPiece",
     MOVE_PIECE = "gameBoard/MovePiece",
     SELECT_PIECE = "gameBoard/SelectPiece"
@@ -66,6 +67,10 @@ export interface GameAction {
 export interface ApplyGameStateAction extends GameAction {
     type: GameActionType.APPLY_GAME_STATE,
     readonly newState: GameState
+}
+
+export interface ResetGameStateAction extends GameAction {
+    type: GameActionType.RESET_GAME_STATE
 }
 
 export interface ApplyBoardStateAction extends GameAction {
