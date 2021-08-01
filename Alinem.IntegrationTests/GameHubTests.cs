@@ -22,7 +22,11 @@ namespace Alinem.IntegrationTests
 			var payload = new InitGameRequest
 			{
 				GameType = GameType.VS_COMPUTER,
-				RequesterPlayerName = "IwillGrillYourMother",
+				User = new User
+				{
+					Id = "xxx",
+					Name = "NoobSlayer"
+				},
 				UserTurn = PlayerTurn.ONE
 			};
 
