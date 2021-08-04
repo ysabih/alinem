@@ -1,4 +1,4 @@
-import { GameBoardState, GameMode, MovePieceAction, PlayerTurn, Point, PointState, PutPieceAction } from "../store/gameBoard/types";
+import { GameBoardState, GameMode, GameState, MovePieceAction, Player, PlayerTurn, Point, PointState, PutPieceAction } from "../store/gameBoard/types";
 
 export function checkValidPut(gameState: GameBoardState, put: PutPieceAction): void {
 
@@ -21,6 +21,11 @@ export function isWinner(board: PointState[][], currentPlayer: PlayerTurn | null
         return true;
     }
     return false;
+}
+
+export function getCurrentPlayerId(gameState: GameState): string {
+    let player: Player = gameState.boardState.currentTurn === PlayerTurn.ONE ? gameState.player1 : gameState.player2;
+    return player.id;
 }
 
 function getPlayerPositions(board: PointState[][], player: PlayerTurn): Point[]{

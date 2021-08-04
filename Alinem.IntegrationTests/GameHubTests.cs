@@ -1,7 +1,6 @@
 ﻿using Alinem.Models;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.Extensions.DependencyInjection;
-using Newtonsoft.Json;
 using NUnit.Framework;
 using System.Threading.Tasks;
 
@@ -22,11 +21,7 @@ namespace Alinem.IntegrationTests
 			var payload = new InitGameRequest
 			{
 				GameType = GameType.VS_COMPUTER,
-				User = new User
-				{
-					Id = "xxx",
-					Name = "NoobSlayer"
-				},
+				UserName = "NoobSlayer",
 				UserTurn = PlayerTurn.ONE
 			};
 

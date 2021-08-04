@@ -2,7 +2,6 @@ import {UserState, UserAction, UserActionType, SetUserNameAction} from './types'
 import { v4 as uuidv4 } from 'uuid';
 
 const initialState: UserState= {
-    id: uuidv4(),
     name : getRandomName(),
     isNameSet: false
 }

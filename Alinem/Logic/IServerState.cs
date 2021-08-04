@@ -1,5 +1,4 @@
 ﻿using Alinem.Models;
-using System;
 using System.Collections.Concurrent;
 
 namespace Alinem.Logic
@@ -9,6 +8,7 @@ namespace Alinem.Logic
 		public Player ComputerUser { get; }
 		public ConcurrentDictionary<string, Player> Users { get; }
 		ConcurrentDictionary<string, GameState> Games { get; }
+		
 		public int DefaultGameDifficulty { get; }
 	}
 }

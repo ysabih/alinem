@@ -36,6 +36,10 @@ class BackendService {
         }
     }
 
+    getUserId(): string | null {
+        return this._connection.connectionId;
+    }
+
     isConnected(): boolean {
         return this._connection && this._connection.state === HubConnectionState.Connected;
     }

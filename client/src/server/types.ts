@@ -1,30 +1,22 @@
 import { GameType, PlayerTurn, Point } from "../store/gameBoard/types";
 
 export interface InitGameRequest {
-    user: User,
+    userName: string,
     userTurn: PlayerTurn,
     gameType: GameType
 }
 
 export interface ResetGameRequest {
     gameId: string,
-    userId: string,
     userTurn: PlayerTurn
 }
 
 export interface QuitGameRequest {
-    gameId: string,
-    userId: string
-}
-
-export interface User {
-    id: string,
-    name: string
+    gameId: string
 }
 
 export interface GameActionRequest {
     gameId: string,
-    userId: string,
     action: GameAction,
 }
 

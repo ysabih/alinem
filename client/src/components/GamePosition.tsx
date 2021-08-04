@@ -68,7 +68,6 @@ async function onPositionClicked(props: Props){
             runBlockingAsync(async () => {
                 let gameActionRequest: GameActionRequest = {
                     gameId: props.game.id,
-                    userId: props.user.id,
                     action: {
                         position: props.position
                     }
@@ -99,7 +98,6 @@ async function onPositionClicked(props: Props){
                 runBlockingAsync(async () => {
                     let gameActionRequest: GameActionRequest = {
                         gameId: props.game.id,
-                        userId: props.user.id,
                         action: {
                             from: from,
                             to: to

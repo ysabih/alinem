@@ -30,11 +30,12 @@ namespace Alinem.Hubs
 			{
 				throw new NotImplementedException("Only games with computer are supported");
 			}
+			string userId = ExtractUserId();
 
 			var player = new Player()
 			{
-				Id = request.User.Id,
-				Name = request.User.Name,
+				Id = userId,
+				Name = request.UserName,
 				Type = PlayerType.HUMAN
 			};
 
@@ -116,13 +117,13 @@ namespace Alinem.Hubs
 		public async Task<GameBoardState> ResetGameAsync(ResetGameRequest request)
 		{
 			await Task.Delay(500).ConfigureAwait(false);
-
+			string userId = ExtractUserId();
 			GameState gameState;
 			bool gameExists = serverState.Games.TryGetValue(request.GameId, out gameState);
 			bool validUserId = false;  
 			if(gameExists)
 			{
-				validUserId = gameState.Player1.Id == request.UserId || gameState.Player2.Id == request.UserId;
+				validUserId = gameState.Player1.Id == userId || gameState.Player2.Id == userId;
 			}
 			if(!gameExists || !validUserId)
 			{
@@ -142,6 +143,7 @@ namespace Alinem.Hubs
 		[HubMethodName("QuitGame")]
 		public Task QuitGameAsync(QuitGameRequest request)
 		{
+			string userId = ExtractUserId();
 			// If game is vs computer delete it. If it's vs another player, send them notification then delete it.
 			// TODO: Factorize duplicate authorization code
 			GameState gameState;
@@ -149,7 +151,7 @@ namespace Alinem.Hubs
 			bool validUserId = false;
 			if (gameExists)
 			{
-				validUserId = gameState.Player1.Id == request.UserId || gameState.Player2.Id == request.UserId;
+				validUserId = gameState.Player1.Id == userId || gameState.Player2.Id == userId;
 			}
 			if (!gameExists || !validUserId)
 			{
@@ -168,6 +170,11 @@ namespace Alinem.Hubs
 		public Task ReceiveGameStateUpdate(GameBoardState gameBoardState)
 		{
 			return Task.CompletedTask;
+		}
+
+		private string ExtractUserId()
+		{
+			return Context.ConnectionId;
 		}
 
 		private static GameBoardState InitializeGameBoard(PlayerTurn firstTurn)

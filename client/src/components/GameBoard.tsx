@@ -12,6 +12,7 @@ import { BlockingUIState } from '../store/ui/types';
 import { setBlockingUI } from '../store/ui/actions';
 import { runBlockingAsync } from '../utils/componentHelpers';
 import { Link } from 'react-router-dom';
+import { getCurrentPlayerId } from '../utils/gameRulesHelpers';
 
 interface StateProps {
     blockingUI: BlockingUIState,
@@ -47,10 +48,7 @@ function GameBoard(props: Props) {
         // initiate game on server first
         let initRequest: InitGameRequest = {
             gameType: props.gameType,
-            user: {
-                id: props.user.id,
-                name: props.user.name
-            },
+            userName: props.user.name,
             // TODO: Make this configurable
             userTurn: PlayerTurn.ONE
         }
@@ -85,8 +83,7 @@ function GameBoard(props: Props) {
 function quitCurrentGame(props: Props) {
     runBlockingAsync(async () => {
         let request: QuitGameRequest = {
-            gameId: props.game.id,
-            userId: props.user.id
+            gameId: props.game.id
         };
         props.resetGameState();
         await backendService.quitGameAsync(request);
@@ -97,7 +94,6 @@ function resetCurrentGame(props: Props) {
     runBlockingAsync(async () => {
         let request: ResetGameRequest = {
             gameId: props.game.id,
-            userId: props.user.id,
             userTurn: PlayerTurn.ONE
         }
         let newBoardState = await backendService.resetGameAsync(request);
@@ -144,7 +140,7 @@ function getPlayerDisplayNames(props: StateProps) : (string|undefined)[] {
     ];
 }
 
-function Board(props: {board: PointState[][]}) {
+function Board(props: {board: PointState[][], playable: boolean}) {
     let boardState = props.board;
     let rows = new Array(boardState.length);
     for(let i = 0; i<boardState.length; i++){
