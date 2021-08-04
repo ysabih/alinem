@@ -59,16 +59,19 @@ function GameBoard(props: Props) {
         console.debug("Initialized game on server, booard state: ", gameState);
 
         props.applyGameState(gameState);
-
         setInitialized(true);
     }
+
+    let userId = backendService.getUserId();
+    let currentPlayerId = getCurrentPlayerId(props.game);
+    let boardPlayable: boolean = userId === currentPlayerId;
 
     return (
         <>
             { props.blockingUI.blocking ? <LoadingSpinner message={props.blockingUI.blockingMessage} /> : <></> }
             <div style={{opacity: props.blockingUI.blocking? 0.2 : 1}}>
                 <GameHUD {...props} />
-                <Board board={props.game.boardState.board} />
+                <Board board={props.game.boardState.board} playable={boardPlayable} />
                 <div className='container' style={{marginTop: 24}}>
                     <div className='row justify-content-center'>
                         <button className='col col-auto btn btn-lg btn-primary mr-3' disabled={!canResetGame(props)} onClick={() => resetCurrentGame(props)}>RESET</button>
@@ -144,7 +147,7 @@ function Board(props: {board: PointState[][], playable: boolean}) {
     let boardState = props.board;
     let rows = new Array(boardState.length);
     for(let i = 0; i<boardState.length; i++){
-        rows[i] = Row(i, boardState[i].length);
+        rows[i] = Row(i, boardState[i].length, props.playable);
     }
     return (
         <div className='container'>
@@ -153,12 +156,12 @@ function Board(props: {board: PointState[][], playable: boolean}) {
     );
 }
 
-function Row(rowIndex: number, rowLength: number) {
+function Row(rowIndex: number, rowLength: number, playable: boolean) {
     let row = new Array(rowLength);
     for(let i = 0; i < row.length; i++){
         row[i] = <GamePosition 
                     position={{x: i, y: rowIndex}}
-                    key={`${i}${rowIndex}`} />
+                    key={`${i}${rowIndex}`} playable={playable} />
     }
 
     return (

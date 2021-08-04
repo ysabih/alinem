@@ -24,13 +24,14 @@ interface DispatchProps {
 interface OwnProps {
     key: string,
     position: Point,
+    playable: boolean
 }
 type Props = StateProps & DispatchProps & OwnProps;
 
 function GamePosition(props: Props) {
     const size = 100;
     let state: PointState = props.game.boardState.board[props.position.y][props.position.x];
-    let playable: boolean = isPlayable(props.game.boardState, props.position);
+    let playable: boolean = props.playable && isPlayable(props.game.boardState, props.position);
     const color = getPositionColor(state, playable);
 
     return (
