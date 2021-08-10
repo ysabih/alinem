@@ -6,6 +6,7 @@ namespace Alinem.Models
 	{
 		public string Id { get; set; }
 		public DateTime StartTimeUtc { get; set; }
+		public GameStage Stage { get; set; }
 		public Player Player1 { get; set; }
 		public Player Player2 { get; set; }
 		public GameBoardState BoardState { get; set; }
@@ -26,6 +27,13 @@ namespace Alinem.Models
 		CONNECTED,
 		NOT_CONNECTED,
 		ABORTED
+	}
+
+	public enum GameStage
+	{
+		WAITING_FOR_OPPONENT,
+		PLAYING,
+		GAME_OVER
 	}
 
 	public enum PlayerTurn
@@ -61,7 +69,7 @@ namespace Alinem.Models
 	public enum GameType
 	{
 		VS_COMPUTER,
-		VS_REMOTE_PLAYER,
-		VS_LOCAL_PLAYER
+		VS_RANDOM_PLAYER,
+		VS_FRIEND
 	}
 }

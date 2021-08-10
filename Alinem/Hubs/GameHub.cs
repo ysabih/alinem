@@ -1,14 +1,14 @@
 ﻿using System;
+using System.Linq;
 using System.Threading.Tasks;
 using Alinem.Logic;
 using Alinem.Models;
 using Microsoft.AspNetCore.SignalR;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
+using Microsoft.Extensions.Logging;
 
 namespace Alinem.Hubs
 {
-	public class GameHub : Hub<IGameClient>
+	public class GameHub : Hub
 	{
 		private readonly IServerState serverState;
 		private readonly IGameLogic gameLogic;
@@ -21,53 +21,36 @@ namespace Alinem.Hubs
 			this.gameAI = gameAI;
 		}
 
-		[HubMethodName("InitGame")]
+		[HubMethodName(GameHubMethodNames.INIT_GAME)]
 		public async Task<GameState> InitGameAsync(InitGameRequest request)
 		{
-			await Task.Delay(500).ConfigureAwait(false);
-
-			if (request.GameType != GameType.VS_COMPUTER)
-			{
-				throw new NotImplementedException("Only games with computer are supported");
-			}
+			//await Task.Delay(500).ConfigureAwait(false);
 			string userId = ExtractUserId();
-
 			var player = new Player()
 			{
 				Id = userId,
 				Name = request.UserName,
 				Type = PlayerType.HUMAN
 			};
-
-			var gameState = new GameState
-			{
-				Id = Guid.NewGuid().ToString("N"),
-				StartTimeUtc = DateTime.UtcNow,
-				
-				Player1 = request.UserTurn == PlayerTurn.ONE ? player : serverState.ComputerUser,
-				Player2 = request.UserTurn == PlayerTurn.TWO ? player : serverState.ComputerUser,
-				BoardState = InitializeGameBoard(request.UserTurn),
-				UserConnectionsState = new UserConnectionState[]
-				{
-					// Requester is connected and computer is always connected
-					UserConnectionState.CONNECTED,
-					UserConnectionState.CONNECTED
-				}
-			};
-
 			// User can quit game and start a new one in the same session => No need to check if user is already registered
 			serverState.Users.TryAdd(player.Id, player);
 
-			if(!serverState.Games.TryAdd(gameState.Id, gameState))
+			switch(request.GameType)
 			{
-				serverState.Games.TryGetValue(gameState.Id, out var existing);
-				throw new ArgumentException($"Game with Id {player.Id} already exists, it started at {existing.StartTimeUtc} UTC");
+				case GameType.VS_COMPUTER:
+				{
+					return InitializeGameVsComputer(player, request.UserTurn);
+				}
+				case GameType.VS_RANDOM_PLAYER:
+				{
+					return await InitializeOrJoinGameVsRandomOpponent(player).ConfigureAwait(false);
+				}
+				default:
+					throw new ArgumentException($"Unsupported game type: ${request.GameType}");
 			}
-
-			return gameState;
 		}
 
-		[HubMethodName("SendGameAction")]
+		[HubMethodName(GameHubMethodNames.SEND_GAME_ACTION)]
 		public async Task<GameBoardState> SendGameActionAsync(GameActionRequest actionRequest)
 		{
 			await Task.Delay(500).ConfigureAwait(false);
@@ -82,38 +65,39 @@ namespace Alinem.Hubs
 				// TODO: make error messages clearer
 				throw new ArgumentException("Invalid move");
 			}
+			GameState newState = gameLogic.ApplyAction(gameState, actionRequest.Action);
 
-			GameBoardState newState = gameLogic.ApplyAction(gameState.BoardState, actionRequest.Action);
-			// Update state in server
-			gameState.BoardState = newState;
-
-			if(newState.Winner != null) /*Game Over*/
-			{
-				return newState;
-			}
-
-			Player player = GameLogicUtils.GetCurrentPlayer(gameState);
+			Player player = GameLogicUtils.GetCurrentPlayer(newState);
 			if(player.Type == PlayerType.COMPUTER)
 			{
+				if(newState.Stage == GameStage.GAME_OVER)
+				{
+					return newState.BoardState;
+				}
+
 				int difficulty = serverState.DefaultGameDifficulty;
 				// Get computer's move and send new state to player
-				GameAction computerAction = gameAI.CalculateComputerMove(gameState.BoardState, difficulty);
+				GameAction computerAction = gameAI.CalculateComputerMove(newState.BoardState, difficulty);
 
-				GameBoardState afterComputerMove = gameLogic.ApplyAction(gameState.BoardState, computerAction);
+				GameState afterComputerMove = gameLogic.ApplyAction(newState, computerAction);
+
 				// Update state in server
-				gameState.BoardState = afterComputerMove;
+				serverState.Games.AddOrUpdate(afterComputerMove.Id, (id) => afterComputerMove/*Will never be used*/, (id, oldState) => afterComputerMove);
 
-				return afterComputerMove;
+				return afterComputerMove.BoardState;
 			}
 			else
 			{
+				// Update state in server
+				serverState.Games.AddOrUpdate(newState.Id, (id) => newState/*Will never be used*/, (id, oldState) => newState);
+				//logger.LogInformation($"Sending game state update to player {player.Id}");
 				// update other player who is current player after updating state
-				await Clients.User(player.Id).ReceiveGameStateUpdate(gameState.BoardState).ConfigureAwait(false);
-				return newState;
+				await Clients.Client(player.Id).SendAsync(GameHubMethodNames.RECEIVE_GAME_STATE_UPDATE, newState).ConfigureAwait(false);
+				return newState.BoardState;
 			}
 		}
 
-		[HubMethodName("ResetGame")]
+		[HubMethodName(GameHubMethodNames.RESET_GAME)]
 		public async Task<GameBoardState> ResetGameAsync(ResetGameRequest request)
 		{
 			await Task.Delay(500).ConfigureAwait(false);
@@ -130,17 +114,17 @@ namespace Alinem.Hubs
 				throw new ArgumentException($"Game with id {request.GameId} not found");
 			}
 			
-			if(!GameCanBeReset(gameState))
+			if(!GameLogicUtils.GameCanBeReset(gameState))
 			{
 				throw new ArgumentException("Game cannot be reset, only games vs computer and finished games can be reset");
 			}
 
-			gameState.BoardState = InitializeGameBoard(request.UserTurn);
+			gameState.BoardState = GameLogicUtils.InitializeGameBoard(request.UserTurn);
 			//return Task.FromResult(gameState.BoardState);
 			return gameState.BoardState;
 		}
 
-		[HubMethodName("QuitGame")]
+		[HubMethodName(GameHubMethodNames.QUIT_GAME)]
 		public Task QuitGameAsync(QuitGameRequest request)
 		{
 			string userId = ExtractUserId();
@@ -158,7 +142,7 @@ namespace Alinem.Hubs
 				throw new ArgumentException($"Game with id {request.GameId} not found");
 			}
 
-			if(!IsVsComputer(gameState))
+			if(!GameLogicUtils.IsVsComputer(gameState))
 			{
 				throw new NotImplementedException("Only games vs computer are supported");
 			}
@@ -167,39 +151,83 @@ namespace Alinem.Hubs
 			return Task.CompletedTask;
 		}
 
-		public Task ReceiveGameStateUpdate(GameBoardState gameBoardState)
-		{
-			return Task.CompletedTask;
-		}
-
 		private string ExtractUserId()
 		{
 			return Context.ConnectionId;
 		}
 
-		private static GameBoardState InitializeGameBoard(PlayerTurn firstTurn)
+		private GameState InitializeGameVsComputer(Player player, PlayerTurn playerTurn)
 		{
-			return new GameBoardState
+			var gameState = new GameState
 			{
-				CurrentTurn = firstTurn,
-				Board = new PlayerTurn?[3, 3],
-				Winner = null,
-				TurnNumber = 1,
-				GameMode = GameMode.PUT
+				Id = Guid.NewGuid().ToString("N"),
+				StartTimeUtc = DateTime.UtcNow,
+				Stage = GameStage.PLAYING,
+				Player1 = player,
+				Player2 = serverState.ComputerUser,
+				BoardState = GameLogicUtils.InitializeGameBoard(playerTurn),
+				UserConnectionsState = new UserConnectionState[]
+				{
+					// Requester is connected and computer is always connected
+					UserConnectionState.CONNECTED,
+					UserConnectionState.CONNECTED
+				}
 			};
+
+			if (!serverState.Games.TryAdd(gameState.Id, gameState))
+			{
+				throw new ArgumentException($"Game with Id {gameState.Id} already exists");
+			}
+
+			return gameState;
 		}
 
-		private static bool GameCanBeReset(GameState gameState)
+		private async Task<GameState> InitializeOrJoinGameVsRandomOpponent(Player player)
 		{
-			bool vsComputer = IsVsComputer(gameState);
-			bool gameOver = gameState.BoardState.Winner != null;
+			string randomGameId = serverState.RemoveRandomOpenGameId();
+			if (randomGameId != null)
+			{
+				// Update game state and notify opponent
+				GameState gameState;
+				if(!serverState.Games.TryGetValue(randomGameId, out gameState))
+				{
+					throw new ArgumentException($"There is no current game with id {randomGameId}");
+				}
+				// Update state to include new player and send notifications to players
+				// TODO: Make GameState immutable and update state more properly
+				GameState newState = gameLogic.AddPlayer(gameState, player);
+				serverState.Games.AddOrUpdate(newState.Id, (id) => newState/*Will never be used*/, (id, oldState) => newState);
 
-			return vsComputer || gameOver;
-		}
+				await Clients.Client(newState.Player1.Id).SendAsync(GameHubMethodNames.RECEIVE_GAME_STATE_UPDATE, newState).ConfigureAwait(false);
+				return newState;
+			}
+			else
+			{
+				// player's turn is random vs human opponents
+				PlayerTurn playerTurn = GameLogicUtils.GetRandomTurn();
+				var gameState = new GameState
+				{
+					Id = Guid.NewGuid().ToString("N"),
+					StartTimeUtc = DateTime.UtcNow,
+					Stage = GameStage.WAITING_FOR_OPPONENT,
+					Player1 = player,
+					Player2 = null,
+					UserConnectionsState = new UserConnectionState[]
+					{
+						UserConnectionState.CONNECTED,
+						UserConnectionState.NOT_CONNECTED
+					}
+				};
 
-		private static bool IsVsComputer(GameState gameState)
-		{
-			return gameState.Player1.Type == PlayerType.COMPUTER || gameState.Player2.Type == PlayerType.COMPUTER;
+				if (!serverState.Games.TryAdd(gameState.Id, gameState))
+				{
+					throw new ArgumentException($"Game with Id {gameState.Id} already exists");
+				}
+				// Add it to open games
+				serverState.AddOpenGameId(gameState.Id);
+
+				return gameState;
+			}
 		}
 	}
 }

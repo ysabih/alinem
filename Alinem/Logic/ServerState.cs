@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Alinem.Logic
 {
@@ -17,11 +18,39 @@ namespace Alinem.Logic
 			new Dictionary<string, Player>() { { ComputerPlayer.Id, ComputerPlayer } });
 		private static readonly ConcurrentDictionary<string, GameState> Games = new ConcurrentDictionary<string, GameState>();
 
+		private static HashSet<string> OpenGames = new HashSet<string>();
+		private static object OpenGamesLock = new object();
+
 		private static readonly int DefaultGameDifficulty = 3;
 
 		Player IServerState.ComputerUser => ComputerPlayer;
 		ConcurrentDictionary<string, Player> IServerState.Users => Users;
 		ConcurrentDictionary<string, GameState> IServerState.Games => Games;
+
 		int IServerState.DefaultGameDifficulty => DefaultGameDifficulty;
+
+		public void AddOpenGameId(string gameId)
+		{
+			lock(OpenGamesLock)
+			{
+				if(!OpenGames.Add(gameId))
+				{
+					throw new ArgumentException($"GameId {gameId} already added");
+				}
+			}
+		}
+
+		public string RemoveRandomOpenGameId()
+		{
+			lock(OpenGamesLock)
+			{
+				string first = OpenGames.FirstOrDefault();
+				if(first != null)
+				{
+					OpenGames.Remove(first);
+				}
+				return first;
+			}
+		}
 	}
 }

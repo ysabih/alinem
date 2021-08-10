@@ -28,6 +28,7 @@ export type PointState = PlayerTurn | null
 export interface GameState {
     id: string,
     startTimtUtc: Date,
+    stage: GameStage,
     player1: Player,
     player2: Player,
     boardState: GameBoardState
@@ -56,7 +57,15 @@ export enum UserConnectionState {
 }
 
 export enum GameType {
-    VS_COMPUTER = "VS_COMPUTER"
+    VS_COMPUTER = "VS_COMPUTER",
+    VS_RANDOM_PLAYER = "VS_RANDOM_PLAYER",
+    VS_FRIEND = "VS_FRIEND"
+}
+
+export enum GameStage {
+    WAITING_FOR_OPPONENT = "WAITING_FOR_OPPONENT",
+	PLAYING = "PLAYING",
+	GAME_OVER = "GAME_OVER"
 }
 
 export interface GameAction {

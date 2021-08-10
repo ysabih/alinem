@@ -1,11 +1,12 @@
 import { isWinner, checkValidMove, checkValidPut, getPositionState } from '../../utils/gameRulesHelpers';
 import {PutPieceAction, GameAction, GameActionType, 
-        GameBoardState, GameMode, MovePieceAction, PlayerTurn, PointState, SelectPieceAction, ApplyGameStateAction, GameState, UserConnectionState, PlayerType, ApplyBoardStateAction} from './types';
+        GameBoardState, GameMode, MovePieceAction, PlayerTurn, PointState, SelectPieceAction, ApplyGameStateAction, GameState, UserConnectionState, PlayerType, ApplyBoardStateAction, GameStage} from './types';
 
 const BOARD_ROW_LENGTH = 3;
 const vsComputerInitialState: GameState = {
     id: "",
     startTimtUtc: new Date(0),
+    stage: GameStage.WAITING_FOR_OPPONENT,
     player1: {
         id: "",
         name: "",

@@ -16,6 +16,38 @@ namespace Alinem.Logic
 			return GetAllPlayerPositions(board, null);
 		}
 
+		public static GameBoardState InitializeGameBoard(PlayerTurn firstTurn)
+		{
+			return new GameBoardState
+			{
+				CurrentTurn = firstTurn,
+				Board = new PlayerTurn?[3, 3],
+				Winner = null,
+				TurnNumber = 1,
+				GameMode = GameMode.PUT
+			};
+		}
+
+		public static bool GameCanBeReset(GameState gameState)
+		{
+			bool vsComputer = IsVsComputer(gameState);
+			bool gameOver = gameState.BoardState.Winner != null;
+
+			return vsComputer || gameOver;
+		}
+
+		public static bool IsVsComputer(GameState gameState)
+		{
+			return gameState.Player1.Type == PlayerType.COMPUTER || gameState.Player2.Type == PlayerType.COMPUTER;
+		}
+
+		public static PlayerTurn GetRandomTurn()
+		{
+			//int num = new Random().Next(0, 1);
+			//return num == 0 ? PlayerTurn.ONE : PlayerTurn.TWO;
+			return PlayerTurn.ONE;
+		}
+
 		public static List<Point> GetAllPlayerPositions(PlayerTurn?[,] board, PlayerTurn? playerTurn)
 		{
 			List<Point> positions = new List<Point>(board.Length);
