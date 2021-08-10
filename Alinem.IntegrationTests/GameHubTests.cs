@@ -18,7 +18,7 @@ namespace Alinem.IntegrationTests
 	public class GameHubTests
 	{
 		[Test]
-		public async Task TestGameVsComputerAsync()
+		public async Task Test_Game_Vs_Computer_Async()
 		{
 			//TODO: make test deterministic if possible
 
@@ -81,7 +81,7 @@ namespace Alinem.IntegrationTests
 		}
 
 		[Test]
-		public async Task TestGameVsRandomOpponentAsync()
+		public async Task Test_Game_Vs_Random_Opponent_Async()
 		{
 			// Test needs the list of open games on server to be empty to run reliably
 			// TODO: Make this deterministic, one option is use an in-process TestServer
@@ -113,7 +113,6 @@ namespace Alinem.IntegrationTests
 			initialGameState.Stage.Should().Be(GameStage.WAITING_FOR_OPPONENT);
 			initialGameState.Player2.Should().Be(null);
 
-			// TODO: Fix race condition, perhaps using a semaphore
 			bool player1Notified = false;
 			GameState player1NotificationGameState = null;
 			Semaphore player1NotificationSem = new Semaphore(0, 1);
@@ -213,6 +212,32 @@ namespace Alinem.IntegrationTests
 				}
 			}
 			#endregion
+		}
+
+		[Test]
+		public async Task Test_Quit_Game_Vs_Random_Opponent_Before_Opponent_Joins()
+		{
+			var initRequest = new InitGameRequest
+			{
+				UserName = "PromiscuousPlayer",
+				GameType = GameType.VS_RANDOM_PLAYER
+			};
+
+			HubConnection connection = await StartNewConnectionAsync().ConfigureAwait(false);
+			GameState gameState = await connection.InvokeAsync<GameState>(GameHubMethodNames.INIT_GAME, initRequest).ConfigureAwait(false);
+
+			gameState.Should().NotBeNull();
+			gameState.BoardState.Should().BeNull();
+			gameState.Player1.Should().BeEquivalentTo(new Player
+			{
+				Id = ExtractUserId(connection),
+				Name = initRequest.UserName,
+				Type = PlayerType.HUMAN
+			}, "Player 1 must be the one who requested new game");
+			gameState.Stage.Should().Be(GameStage.WAITING_FOR_OPPONENT);
+			gameState.Player2.Should().Be(null);
+
+			await connection.InvokeAsync(GameHubMethodNames.QUIT_GAME, new QuitGameRequest { GameId = gameState.Id }).ConfigureAwait(false);
 		}
 
 		private static async Task<HubConnection> StartNewConnectionAsync()

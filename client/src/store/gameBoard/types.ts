@@ -27,11 +27,12 @@ export type PointState = PlayerTurn | null
 
 export interface GameState {
     id: string,
+    type: GameType,
     startTimtUtc: Date,
     stage: GameStage,
     player1: Player,
-    player2: Player,
-    boardState: GameBoardState
+    player2: Player | null, /*Can be null when still waiting for opponent*/
+    boardState: GameBoardState | null, /*Can be null when not playing yet (e.g. when waiting for opponent)*/
     userConnectionsState: UserConnectionState[]
 }
 
@@ -63,6 +64,7 @@ export enum GameType {
 }
 
 export enum GameStage {
+    UNINITIALIZED = "UNINITIALIZED", /*To be used by client only*/
     WAITING_FOR_OPPONENT = "WAITING_FOR_OPPONENT",
 	PLAYING = "PLAYING",
 	GAME_OVER = "GAME_OVER"

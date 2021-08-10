@@ -142,12 +142,12 @@ namespace Alinem.Hubs
 				throw new ArgumentException($"Game with id {request.GameId} not found");
 			}
 
-			if(!GameLogicUtils.IsVsComputer(gameState))
+			if(gameState.Type == GameType.VS_RANDOM_PLAYER && gameState.Stage == GameStage.WAITING_FOR_OPPONENT)
 			{
-				throw new NotImplementedException("Only games vs computer are supported");
+				serverState.TryRemoveOpenGame(gameState.Id);
 			}
-
 			serverState.Games.TryRemove(gameState.Id, out _);
+			
 			return Task.CompletedTask;
 		}
 
@@ -161,6 +161,7 @@ namespace Alinem.Hubs
 			var gameState = new GameState
 			{
 				Id = Guid.NewGuid().ToString("N"),
+				Type = GameType.VS_COMPUTER,
 				StartTimeUtc = DateTime.UtcNow,
 				Stage = GameStage.PLAYING,
 				Player1 = player,
@@ -184,7 +185,9 @@ namespace Alinem.Hubs
 
 		private async Task<GameState> InitializeOrJoinGameVsRandomOpponent(Player player)
 		{
-			string randomGameId = serverState.RemoveRandomOpenGameId();
+			await Task.Delay(TimeSpan.FromSeconds(2)).ConfigureAwait(false);
+
+			string randomGameId = serverState.PopRandomOpenGameId();
 			if (randomGameId != null)
 			{
 				// Update game state and notify opponent
@@ -208,6 +211,7 @@ namespace Alinem.Hubs
 				var gameState = new GameState
 				{
 					Id = Guid.NewGuid().ToString("N"),
+					Type = GameType.VS_RANDOM_PLAYER,
 					StartTimeUtc = DateTime.UtcNow,
 					Stage = GameStage.WAITING_FOR_OPPONENT,
 					Player1 = player,

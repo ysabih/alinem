@@ -13,6 +13,8 @@ const ServerMethodNames = {
     receiveGameStateUpdate: "ReceiveGameStateUpdate",
 }
 
+type GamestateUpdateHandler = (newState: GameState) => any;
+
 class BackendService {
 
     _connection!: HubConnection;
@@ -65,6 +67,23 @@ class BackendService {
     async resetGameAsync(request: ResetGameRequest) {
         let response = await this._connection.invoke(ServerMethodNames.resetGame, request);
         return response as GameBoardState;
+    }
+
+    registerGameStateUpdateHandler(handler: GamestateUpdateHandler) {
+        if(this._connection == null || !this.isConnected()){
+            throw new Error("Can't register game state update handler if not connected");
+        }
+        this._connection.on(ServerMethodNames.receiveGameStateUpdate, (playload) => {
+            let newState = playload as GameState;
+            handler(newState);
+        });
+    }
+
+    clearGameStateUpdateHandler() {
+        if(this._connection == null || !this.isConnected()){
+            return;
+        }
+        this._connection.on(ServerMethodNames.receiveGameStateUpdate, (playload) => {/*Do nothing*/});
     }
 }
 

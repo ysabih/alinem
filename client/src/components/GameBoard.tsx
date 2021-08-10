@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { connect } from 'react-redux';
-import { GameBoardState, GameState, GameType, PlayerTurn, PlayerType, PointState} from '../store/gameBoard/types';
+import { GameBoardState, GameStage, GameState, GameType, PlayerTurn, PlayerType, PointState} from '../store/gameBoard/types';
 import { ApplicationState} from '../store/index'
 import GamePosition from './GamePosition';
 import { UserState } from '../store/user/types';
@@ -57,21 +57,19 @@ function GameBoard(props: Props) {
             throw new Error("New board state cannot be falsy, value: " + gameState);
         }
         console.debug("Initialized game on server, booard state: ", gameState);
+        backendService.registerGameStateUpdateHandler((newState: GameState) => {
+            props.applyGameState(newState);
+        })
 
         props.applyGameState(gameState);
         setInitialized(true);
     }
 
-    let userId = backendService.getUserId();
-    let currentPlayerId = getCurrentPlayerId(props.game);
-    let boardPlayable: boolean = userId === currentPlayerId;
-
     return (
         <>
             { props.blockingUI.blocking ? <LoadingSpinner message={props.blockingUI.blockingMessage} /> : <></> }
             <div style={{opacity: props.blockingUI.blocking? 0.2 : 1}}>
-                <GameHUD {...props} />
-                <Board board={props.game.boardState.board} playable={boardPlayable} />
+                <GameBoardCore {...props}/>
                 <div className='container' style={{marginTop: 24}}>
                     <div className='row justify-content-center'>
                         <button className='col col-auto btn btn-lg btn-primary mr-3' disabled={!canResetGame(props)} onClick={() => resetCurrentGame(props)}>RESET</button>
@@ -90,6 +88,7 @@ function quitCurrentGame(props: Props) {
         };
         props.resetGameState();
         await backendService.quitGameAsync(request);
+        backendService.clearGameStateUpdateHandler();
     }, "Quitting game...", props.setBlockingUI);
 }
 
@@ -106,15 +105,61 @@ function resetCurrentGame(props: Props) {
 
 function canResetGame(props: Props): boolean {
     // Only games vs computer and finished games can be reset
+    if(props.game.stage !== GameStage.PLAYING) return false;
+    if(props.game.boardState == null) {
+        throw new Error("Board state must not be null while game stage is "+props.game.stage);
+    }
+    if(props.game.player2 == null) {
+        throw new Error("player2 must not be null while game stage is "+props.game.stage);
+    }
     let vsComputer:boolean = props.game.player1.type === PlayerType.COMPUTER || props.game.player2.type === PlayerType.COMPUTER;
     let connected = backendService.isConnected();
     let firstTurn = props.game.boardState.turnNumber <= 1;
     return (vsComputer || props.game.boardState.winner != null) && connected && !firstTurn;
 }
 
+function canQuitGame(props: Props): boolean {
+    return props.game.stage !== GameStage.UNINITIALIZED
+}
+
+function GameBoardCore(props: Props) {
+    switch(props.game.stage) {
+        case GameStage.UNINITIALIZED: {
+            return (<></>);
+        }
+        case GameStage.PLAYING: 
+        case GameStage.GAME_OVER: 
+        {
+            let userId = backendService.getUserId();
+            let currentPlayerId = getCurrentPlayerId(props.game);
+            let boardPlayable: boolean = userId === currentPlayerId;
+            if(props.game.boardState == null) {
+                throw new Error("Board state must not be null while game stage is "+props.game.stage);
+            }
+            return (
+                <>
+                <GameHUD {...props} />
+                <Board board={props.game.boardState.board} playable={boardPlayable} />
+                </>
+            );
+        }
+        case GameStage.WAITING_FOR_OPPONENT: {
+            return (
+                <h3>Waiting for a player to join the game</h3>
+            );
+        }
+        default: {
+            throw new Error("Unsupported game stage: "+props.game.stage);
+        }
+    }
+}
+
 function GameHUD(props: StateProps){
     let playerNames = getPlayerDisplayNames(props);
-    let boardState: GameBoardState = props.game.boardState;
+    let boardState: GameBoardState | null = props.game.boardState;
+    if(boardState == null) {
+        throw new Error("Board state must not be null while game stage is "+props.game.stage);
+    }
     if(boardState.winner != null){
         let winnerName = boardState.winner === PlayerTurn.ONE ? playerNames[0] : playerNames[1];
         return(

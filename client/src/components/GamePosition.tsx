@@ -30,6 +30,9 @@ type Props = StateProps & DispatchProps & OwnProps;
 
 function GamePosition(props: Props) {
     const size = 100;
+    if(props.game.boardState == null) {
+        throw new Error("Board state must not be null while game stage is "+props.game.stage);
+    }
     let state: PointState = props.game.boardState.board[props.position.y][props.position.x];
     let playable: boolean = props.playable && isPlayable(props.game.boardState, props.position);
     const color = getPositionColor(state, playable);
@@ -62,6 +65,9 @@ function getPositionColor(point: PointState, playable: boolean): PositionColor{
 }
 
 async function onPositionClicked(props: Props){
+    if(props.game.boardState == null) {
+        throw new Error("Board state must not be null while game stage is "+props.game.stage);
+    }
     switch(props.game.boardState.gameMode) {
         case GameMode.PUT: {
             props.addPiece(props.position);

@@ -24,6 +24,12 @@ export function isWinner(board: PointState[][], currentPlayer: PlayerTurn | null
 }
 
 export function getCurrentPlayerId(gameState: GameState): string {
+    if(gameState.boardState == null) {
+        throw new Error("Board state must not be nul");
+    }
+    if(gameState.player2 == null) {
+        throw new Error("Both players must be not null");
+    }
     let player: Player = gameState.boardState.currentTurn === PlayerTurn.ONE ? gameState.player1 : gameState.player2;
     return player.id;
 }

@@ -1,12 +1,13 @@
 import { isWinner, checkValidMove, checkValidPut, getPositionState } from '../../utils/gameRulesHelpers';
 import {PutPieceAction, GameAction, GameActionType, 
-        GameBoardState, GameMode, MovePieceAction, PlayerTurn, PointState, SelectPieceAction, ApplyGameStateAction, GameState, UserConnectionState, PlayerType, ApplyBoardStateAction, GameStage} from './types';
+        GameBoardState, GameMode, MovePieceAction, PlayerTurn, PointState, SelectPieceAction, ApplyGameStateAction, GameState, UserConnectionState, PlayerType, ApplyBoardStateAction, GameStage, GameType} from './types';
 
 const BOARD_ROW_LENGTH = 3;
 const vsComputerInitialState: GameState = {
     id: "",
+    type: GameType.VS_COMPUTER,
     startTimtUtc: new Date(0),
-    stage: GameStage.WAITING_FOR_OPPONENT,
+    stage: GameStage.UNINITIALIZED,
     player1: {
         id: "",
         name: "",
@@ -34,6 +35,9 @@ const vsComputerInitialState: GameState = {
 export function gameReducer(state: GameState = vsComputerInitialState, action: GameAction): GameState {
     switch(action.type){
         case GameActionType.ADD_PIECE : {
+            if(state.boardState == null) {
+                throw new Error("Board state must not be null to apply game move");
+            }
             if(state.boardState.gameMode !== GameMode.PUT){
                 throw new Error(`Cannot add have more than ${BOARD_ROW_LENGTH} per player`);
             }
@@ -59,6 +63,9 @@ export function gameReducer(state: GameState = vsComputerInitialState, action: G
         }
 
         case GameActionType.MOVE_PIECE: {
+            if(state.boardState == null) {
+                throw new Error("Board state must not be null to apply game move");
+            }
             if(state.boardState.turnNumber < BOARD_ROW_LENGTH  * 2) {
                 throw new Error(`Cannot move pieces before each player has put ${BOARD_ROW_LENGTH} pieces`)
             }
@@ -84,6 +91,9 @@ export function gameReducer(state: GameState = vsComputerInitialState, action: G
 
         case GameActionType.SELECT_PIECE: {
             let selectAction = action as SelectPieceAction;
+            if(state.boardState == null) {
+                throw new Error("Board state must not be null to apply game move");
+            }
             let positionState = getPositionState(state.boardState.board, selectAction.position);
             if(positionState == null){
                 throw new Error("Cannot select an empty position");

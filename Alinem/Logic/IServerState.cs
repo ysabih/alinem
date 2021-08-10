@@ -12,7 +12,8 @@ namespace Alinem.Logic
 		// This assumes the game's state is already added
 		// TODO: merge the logic in one function
 		void AddOpenGameId(string gameId);
-		string RemoveRandomOpenGameId();
+		string PopRandomOpenGameId();
+		void TryRemoveOpenGame(string gameId);
 
 		public int DefaultGameDifficulty { get; }
 	}

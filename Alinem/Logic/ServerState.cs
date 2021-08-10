@@ -40,7 +40,7 @@ namespace Alinem.Logic
 			}
 		}
 
-		public string RemoveRandomOpenGameId()
+		public string PopRandomOpenGameId()
 		{
 			lock(OpenGamesLock)
 			{
@@ -50,6 +50,14 @@ namespace Alinem.Logic
 					OpenGames.Remove(first);
 				}
 				return first;
+			}
+		}
+
+		public void TryRemoveOpenGame(string gameId)
+		{
+			lock (OpenGamesLock)
+			{
+				OpenGames.Remove(gameId);
 			}
 		}
 	}

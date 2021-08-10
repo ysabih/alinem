@@ -5,6 +5,7 @@ namespace Alinem.Models
 	public class GameState
 	{
 		public string Id { get; set; }
+		public GameType Type { get; set; }
 		public DateTime StartTimeUtc { get; set; }
 		public GameStage Stage { get; set; }
 		public Player Player1 { get; set; }
