@@ -7,5 +7,6 @@
 		public const string RESET_GAME = "ResetGame";
 		public const string QUIT_GAME = "QuitGame";
 		public const string RECEIVE_GAME_STATE_UPDATE = "ReceiveGameStateUpdate";
+		public const string RECEIVE_OPPONENT_QUIT_NOTIF = "ReceiveOpponentQuitNotif";
 	}
 }

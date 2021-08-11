@@ -43,6 +43,7 @@ namespace Alinem.Logic
 			return new GameState
 			{
 				Id = currentState.Id,
+				Type = currentState.Type,
 				StartTimeUtc = currentState.StartTimeUtc,
 				Player1 = currentState.Player1,
 				Player2 = currentState.Player2,
@@ -78,6 +79,7 @@ namespace Alinem.Logic
 			return new GameState
 			{
 				Id = gameState.Id,
+				Type = gameState.Type,
 				StartTimeUtc = gameState.StartTimeUtc,
 				Player1 = gameState.Player1,
 				Player2 = newPlayer,

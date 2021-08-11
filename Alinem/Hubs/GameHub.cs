@@ -125,7 +125,7 @@ namespace Alinem.Hubs
 		}
 
 		[HubMethodName(GameHubMethodNames.QUIT_GAME)]
-		public Task QuitGameAsync(QuitGameRequest request)
+		public async Task QuitGameAsync(QuitGameRequest request)
 		{
 			string userId = ExtractUserId();
 			// If game is vs computer delete it. If it's vs another player, send them notification then delete it.
@@ -142,13 +142,20 @@ namespace Alinem.Hubs
 				throw new ArgumentException($"Game with id {request.GameId} not found");
 			}
 
-			if(gameState.Type == GameType.VS_RANDOM_PLAYER && gameState.Stage == GameStage.WAITING_FOR_OPPONENT)
+			if(gameState.Type == GameType.VS_RANDOM_PLAYER)
 			{
-				serverState.TryRemoveOpenGame(gameState.Id);
+				if(gameState.Stage == GameStage.WAITING_FOR_OPPONENT)
+				{
+					serverState.TryRemoveOpenGame(gameState.Id);
+				}
+				else if(gameState.Stage == GameStage.PLAYING)
+				{
+					// Send notification to other player
+					string otherPlayerId = gameState.Player1.Id == userId ? gameState.Player2.Id : gameState.Player1.Id;
+					await Clients.Client(otherPlayerId).SendAsync(GameHubMethodNames.RECEIVE_OPPONENT_QUIT_NOTIF).ConfigureAwait(false);
+				}
 			}
 			serverState.Games.TryRemove(gameState.Id, out _);
-			
-			return Task.CompletedTask;
 		}
 
 		private string ExtractUserId()
