@@ -99,17 +99,23 @@ function quitCurrentGame(props: Props) {
     }, "Quitting game...", props.setBlockingUI);
 }
 
-// const quitableGameStages: GameStage[] = [
-//     GameStage.WAITING_FOR_OPPONENT,
-//     GameStage.GAME_OVER,
-//     GameStage.PLAYING
-// ];
+const quitableGameStages: GameStage[] = [
+    GameStage.WAITING_FOR_OPPONENT,
+    GameStage.GAME_OVER,
+    GameStage.PLAYING
+];
 
 function quitGameOnServerAsync(props:Props) {
-    let request: QuitGameRequest = {
-        gameId: props.game.id
-    };
-    return backendService.quitGameAsync(request);
+    let quitable: boolean = (quitableGameStages.find(e => props.game.stage === e)) !== undefined;
+    if(quitable) {
+        let request: QuitGameRequest = {
+            gameId: props.game.id
+        };
+        return backendService.quitGameAsync(request);
+    }
+    else{
+        console.debug("No need to send quitGame request, game stage is "+props.game.stage);
+    }
 }
 
 function resetCurrentGame(props: Props) {
