@@ -24,7 +24,6 @@ namespace Alinem.Hubs
 		[HubMethodName(GameHubMethodNames.INIT_GAME)]
 		public async Task<GameState> InitGameAsync(InitGameRequest request)
 		{
-			//await Task.Delay(500).ConfigureAwait(false);
 			string userId = ExtractUserId();
 			var player = new Player()
 			{
@@ -192,8 +191,6 @@ namespace Alinem.Hubs
 
 		private async Task<GameState> InitializeOrJoinGameVsRandomOpponent(Player player)
 		{
-			await Task.Delay(TimeSpan.FromSeconds(2)).ConfigureAwait(false);
-
 			string randomGameId = serverState.PopRandomOpenGameId();
 			if (randomGameId != null)
 			{
