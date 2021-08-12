@@ -3,7 +3,7 @@ import {PutPieceAction, GameAction, GameActionType,
         GameBoardState, GameMode, MovePieceAction, PlayerTurn, PointState, SelectPieceAction, ApplyGameStateAction, GameState, UserConnectionState, PlayerType, ApplyBoardStateAction, GameStage, GameType} from './types';
 
 const BOARD_ROW_LENGTH = 3;
-const vsComputerInitialState: GameState = {
+const unintializedState: GameState = {
     id: "",
     type: GameType.VS_COMPUTER,
     startTimtUtc: new Date(0),
@@ -13,26 +13,15 @@ const vsComputerInitialState: GameState = {
         name: "",
         type: PlayerType.COMPUTER
     },
-    player2: {
-        id: "",
-        name: "",
-        type: PlayerType.COMPUTER
-    },
+    player2: null,
     userConnectionsState: [
         UserConnectionState.NOT_CONNECTED,
         UserConnectionState.NOT_CONNECTED
     ],
-    boardState: {
-        currentTurn: null,
-        winner: null,
-        turnNumber: 1,
-        board: [[null, null, null], [null, null, null], [null, null, null]],
-        gameMode: GameMode.PUT,
-        selected: null,
-    }
+    boardState: null,
 }
 
-export function gameReducer(state: GameState = vsComputerInitialState, action: GameAction): GameState {
+export function gameReducer(state: GameState = unintializedState, action: GameAction): GameState {
     switch(action.type){
         case GameActionType.ADD_PIECE : {
             if(state.boardState == null) {
@@ -124,7 +113,13 @@ export function gameReducer(state: GameState = vsComputerInitialState, action: G
         }
 
         case GameActionType.RESET_GAME_STATE: {
-            return vsComputerInitialState
+            return unintializedState
+        }
+
+        case GameActionType.SET_OPPONENT_QUIT: {
+            let newState: GameState = Object.assign({}, unintializedState);
+            newState.stage = GameStage.OPPONENT_LEFT;
+            return newState;
         }
 
         default:

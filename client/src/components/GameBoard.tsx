@@ -7,7 +7,7 @@ import { UserState } from '../store/user/types';
 import { backendService } from '../server/backendService'
 import LoadingSpinner from './LoadingSpinner';
 import { InitGameRequest, QuitGameRequest, ResetGameRequest } from '../server/types';
-import { applyGameBoardState, applyGameState, resetGameState } from '../store/gameBoard/actions';
+import { applyGameBoardState, applyGameState, resetGameState, setOpponentLeftState } from '../store/gameBoard/actions';
 import { BlockingUIState } from '../store/ui/types';
 import { setBlockingUI } from '../store/ui/actions';
 import { runBlockingAsync } from '../utils/componentHelpers';
@@ -23,7 +23,8 @@ interface DispatchProps {
     applyGameState: typeof applyGameState,
     resetGameState: typeof resetGameState,
     applyGameBoardState: typeof applyGameBoardState,
-    setBlockingUI: typeof setBlockingUI
+    setBlockingUI: typeof setBlockingUI,
+    setOpponentLeftState: typeof setOpponentLeftState
 }
 interface OwnProps {
     gameType: GameType
@@ -60,6 +61,10 @@ function GameBoard(props: Props) {
         backendService.registerGameStateUpdateHandler((newState: GameState) => {
             props.applyGameState(newState);
         })
+        backendService.registerOpponentLeftNotificationHandler(() => {
+            console.debug("Received notification: Opponent left the game")
+            props.setOpponentLeftState();
+        });
 
         props.applyGameState(gameState);
         setInitialized(true);
@@ -72,8 +77,13 @@ function GameBoard(props: Props) {
                 <GameBoardCore {...props}/>
                 <div className='container' style={{marginTop: 24}}>
                     <div className='row justify-content-center'>
-                        <button className='col col-auto btn btn-lg btn-primary mr-3' disabled={!canResetGame(props)} onClick={() => resetCurrentGame(props)}>RESET</button>
-                        <Link className='col col-auto btn btn-lg btn-primary' to='' onClick={() => quitCurrentGame(props)}>EXIT</Link>
+                        <button className='col col-auto btn btn-lg btn-primary mr-3' 
+                        style={{display: canResetGame(props) ? 'inline' : 'none'}} 
+                        onClick={() => resetCurrentGame(props)}>RESET</button>
+
+                        <Link className='col col-auto btn btn-lg btn-primary' to='' 
+                        style={{display: canQuitGame(props) ? 'inline' : 'none'}} 
+                        onClick={() => quitCurrentGame(props)}>EXIT</Link>
                     </div>
                 </div>
             </div>
@@ -83,13 +93,23 @@ function GameBoard(props: Props) {
 
 function quitCurrentGame(props: Props) {
     runBlockingAsync(async () => {
-        let request: QuitGameRequest = {
-            gameId: props.game.id
-        };
+        await quitGameOnServerAsync(props);
         props.resetGameState();
-        await backendService.quitGameAsync(request);
         backendService.clearGameStateUpdateHandler();
     }, "Quitting game...", props.setBlockingUI);
+}
+
+// const quitableGameStages: GameStage[] = [
+//     GameStage.WAITING_FOR_OPPONENT,
+//     GameStage.GAME_OVER,
+//     GameStage.PLAYING
+// ];
+
+function quitGameOnServerAsync(props:Props) {
+    let request: QuitGameRequest = {
+        gameId: props.game.id
+    };
+    return backendService.quitGameAsync(request);
 }
 
 function resetCurrentGame(props: Props) {
@@ -146,6 +166,11 @@ function GameBoardCore(props: Props) {
         case GameStage.WAITING_FOR_OPPONENT: {
             return (
                 <h3>Waiting for a player to join the game</h3>
+            );
+        }
+        case GameStage.OPPONENT_LEFT: {
+            return (
+                <h3>Oops, Opponent left</h3>
             );
         }
         default: {
@@ -227,6 +252,7 @@ const mapDispatch : DispatchProps = {
     applyGameState: applyGameState,
     resetGameState: resetGameState,
     applyGameBoardState: applyGameBoardState,
+    setOpponentLeftState: setOpponentLeftState,
     setBlockingUI: setBlockingUI
 }
 export default connect<StateProps, DispatchProps, OwnProps, ApplicationState>(

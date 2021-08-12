@@ -2,6 +2,7 @@ export enum GameActionType {
     APPLY_GAME_STATE = "game/applyGameState",
     APPLY_BAORD_STATE = "game/applyBoardState",
     RESET_GAME_STATE = "game/resetGameState",
+    SET_OPPONENT_QUIT = "game/setOpponentQuit",
     ADD_PIECE = "gameBoard/addPiece",
     MOVE_PIECE = "gameBoard/MovePiece",
     SELECT_PIECE = "gameBoard/SelectPiece"
@@ -67,7 +68,8 @@ export enum GameStage {
     UNINITIALIZED = "UNINITIALIZED", /*To be used by client only*/
     WAITING_FOR_OPPONENT = "WAITING_FOR_OPPONENT",
 	PLAYING = "PLAYING",
-	GAME_OVER = "GAME_OVER"
+	GAME_OVER = "GAME_OVER",
+    OPPONENT_LEFT = "OPPONENT_LEFT",
 }
 
 export interface GameAction {
@@ -82,6 +84,10 @@ export interface ApplyGameStateAction extends GameAction {
 
 export interface ResetGameStateAction extends GameAction {
     type: GameActionType.RESET_GAME_STATE
+}
+
+export interface SetOpponentQuitStateAction extends GameAction {
+    type: GameActionType.SET_OPPONENT_QUIT
 }
 
 export interface ApplyBoardStateAction extends GameAction {

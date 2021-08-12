@@ -11,9 +11,11 @@ const ServerMethodNames = {
     resetGame: "ResetGame",
     sendGameAction: "SendGameAction",
     receiveGameStateUpdate: "ReceiveGameStateUpdate",
+    receiveOpponentQuitNotif: "ReceiveOpponentQuitNotif"
 }
 
 type GamestateUpdateHandler = (newState: GameState) => any;
+type OpponentQuitHandler = () => any;
 
 class BackendService {
 
@@ -84,6 +86,22 @@ class BackendService {
             return;
         }
         this._connection.on(ServerMethodNames.receiveGameStateUpdate, (playload) => {/*Do nothing*/});
+    }
+
+    registerOpponentLeftNotificationHandler(handler: OpponentQuitHandler) {
+        if(this._connection == null || !this.isConnected()){
+            throw new Error("Can't register opponent quit notification handler if not connected");
+        }
+        this._connection.on(ServerMethodNames.receiveOpponentQuitNotif, () => {
+            handler()
+        });
+    }
+
+    clearOpponentLeftNotificationHandler() {
+        if(this._connection == null || !this.isConnected()){
+            return;
+        }
+        this._connection.on(ServerMethodNames.receiveOpponentQuitNotif, () => {/*Do nothing*/});
     }
 }
 
