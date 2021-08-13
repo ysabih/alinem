@@ -44,29 +44,7 @@ function GameBoard(props: Props) {
         if(initialized){
            return 
         }
-        
-        await backendService.connectAsync();
-        // initiate game on server first
-        let initRequest: InitGameRequest = {
-            gameType: props.gameType,
-            userName: props.user.name,
-            // TODO: Make this configurable
-            userTurn: PlayerTurn.ONE
-        }
-        let gameState = await backendService.initGameAsync(initRequest);
-        if(!gameState) {
-            throw new Error("New board state cannot be falsy, value: " + gameState);
-        }
-        console.debug("Initialized game on server, booard state: ", gameState);
-        backendService.registerGameStateUpdateHandler((newState: GameState) => {
-            props.applyGameState(newState);
-        })
-        backendService.registerOpponentLeftNotificationHandler(() => {
-            console.debug("Received notification: Opponent left the game")
-            props.setOpponentLeftState();
-        });
-
-        props.applyGameState(gameState);
+        await initGameAsync(props);
         setInitialized(true);
     }
 
@@ -77,18 +55,38 @@ function GameBoard(props: Props) {
                 <GameBoardCore {...props}/>
                 <div className='container' style={{marginTop: 24}}>
                     <div className='row justify-content-center'>
-                        <button className='col col-auto btn btn-lg btn-primary mr-3' 
-                        style={{display: canResetGame(props) ? 'inline' : 'none'}} 
-                        onClick={() => resetCurrentGame(props)}>RESET</button>
-
-                        <Link className='col col-auto btn btn-lg btn-primary' to='' 
-                        style={{display: canQuitGame(props) ? 'inline' : 'none'}} 
-                        onClick={() => quitCurrentGame(props)}>EXIT</Link>
+                        <ResetGameVsComputerButton {...props} />
+                        <ReplayButton {...props} />
+                        <ExitGameButton {...props} />
                     </div>
                 </div>
             </div>
         </>
     );
+}
+
+async function initGameAsync(props: Props) {
+    await backendService.connectAsync();
+    // initiate game on server first
+    let initRequest: InitGameRequest = {
+        gameType: props.gameType,
+        userName: props.user.name,
+        // TODO: Make this configurable
+        userTurn: PlayerTurn.ONE
+    }
+    let gameState = await backendService.initGameAsync(initRequest);
+    if(!gameState) {
+        throw new Error("New board state cannot be falsy, value: " + gameState);
+    }
+    console.debug("Initialized game on server, booard state: ", gameState);
+    backendService.registerGameStateUpdateHandler((newState: GameState) => {
+        props.applyGameState(newState);
+    })
+    backendService.registerOpponentLeftNotificationHandler(() => {
+        console.debug("Received notification: Opponent left the game")
+        props.setOpponentLeftState();
+    });
+    props.applyGameState(gameState);
 }
 
 function quitCurrentGame(props: Props) {
@@ -130,23 +128,47 @@ function resetCurrentGame(props: Props) {
 }
 
 function canResetGame(props: Props): boolean {
-    // Only games vs computer and finished games can be reset
     if(props.game.type !== GameType.VS_COMPUTER) return false;
-    if(props.game.stage !== GameStage.PLAYING) return false;
-    if(props.game.boardState == null) {
-        throw new Error("Board state must not be null while game stage is "+props.game.stage);
-    }
-    if(props.game.player2 == null) {
-        throw new Error("player2 must not be null while game stage is "+props.game.stage);
-    }
-    let vsComputer:boolean = props.game.player1.type === PlayerType.COMPUTER || props.game.player2.type === PlayerType.COMPUTER;
+    if(props.game.stage !== GameStage.PLAYING && props.game.stage !== GameStage.GAME_OVER) return false;
+
     let connected = backendService.isConnected();
-    let firstTurn = props.game.boardState.turnNumber <= 1;
-    return (vsComputer || props.game.boardState.winner != null) && connected && !firstTurn;
+    let firstTurn = props.game.boardState != null && props.game.boardState.turnNumber <= 1;
+    return connected && !firstTurn;
 }
 
 function canQuitGame(props: Props): boolean {
     return props.game.stage !== GameStage.UNINITIALIZED
+}
+
+function canReinitializeGame(props: Props): boolean {
+    if(props.game.stage === GameStage.UNINITIALIZED) return false;
+    if(props.game.type !== GameType.VS_RANDOM_PLAYER) return false;
+
+    return backendService.isConnected() && (props.game.stage === GameStage.GAME_OVER);
+}
+
+function ExitGameButton(props: Props) {
+    return (
+    <Link className='col col-auto btn btn-lg btn-primary' to='' 
+        style={{display: canQuitGame(props) ? 'inline' : 'none'}} 
+        onClick={() => quitCurrentGame(props)}>EXIT</Link>
+    );
+}
+
+function ResetGameVsComputerButton(props: Props) {
+    return (
+    <button className='col col-auto btn btn-lg btn-primary mr-3' 
+        style={{display: canResetGame(props) ? 'inline' : 'none'}} 
+        onClick={() => resetCurrentGame(props)}>RESET</button>
+    );
+}
+
+function ReplayButton(props: Props) {
+    return (
+        <button className='col col-auto btn btn-lg btn-primary mr-3' 
+        style={{display: canReinitializeGame(props) ? 'inline' : 'none'}} 
+        onClick={async () => await initGameAsync(props)}>New game</button>
+    );
 }
 
 function GameBoardCore(props: Props) {
