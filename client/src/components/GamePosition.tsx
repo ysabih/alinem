@@ -3,7 +3,7 @@ import { connect } from "react-redux";
 import { backendService } from "../server/backendService";
 import { GameActionRequest } from "../server/types";
 import { ApplicationState } from "../store";
-import { addPiece, applyGameBoardState, movePiece, selectPiece } from "../store/gameBoard/actions";
+import { addPiece, applyGameState, movePiece, selectPiece } from "../store/gameBoard/actions";
 import { GameMode, GameState, PlayerTurn, Point, PointState } from "../store/gameBoard/types";
 import { setBlockingUI } from "../store/ui/actions";
 import { UserState } from "../store/user/types";
@@ -18,7 +18,7 @@ interface DispatchProps {
     addPiece: typeof addPiece,
     movePiece: typeof movePiece,
     selectPiece: typeof selectPiece,
-    applyGameBoardState: typeof applyGameBoardState,
+    applyGameState: typeof applyGameState,
     setBlockingUI: typeof setBlockingUI
 }
 interface OwnProps {
@@ -84,7 +84,7 @@ async function onPositionClicked(props: Props){
                     throw new Error("Expected non-falsy reponse from server, response: "+ response);
                 }
                 console.debug("Received new board state from server: ", response);
-                props.applyGameBoardState(response);
+                props.applyGameState(response);
 
             }, "Sending move...", props.setBlockingUI);
             break;
@@ -115,7 +115,7 @@ async function onPositionClicked(props: Props){
                         throw new Error("Expected non-falsy reponse from server, response: "+ response);
                     }
                     console.debug("Received new board state from server: ", response);
-                    props.applyGameBoardState(response);
+                    props.applyGameState(response);
                        
                 }, "Sending move...", props.setBlockingUI);
             }
@@ -134,7 +134,7 @@ const mapDispatch : DispatchProps = {
     addPiece: addPiece,
     movePiece: movePiece,
     selectPiece: selectPiece,
-    applyGameBoardState: applyGameBoardState,
+    applyGameState: applyGameState,
     setBlockingUI: setBlockingUI
 }
 export default connect<StateProps, DispatchProps, OwnProps, ApplicationState>(

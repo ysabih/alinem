@@ -51,31 +51,31 @@ namespace Alinem.IntegrationTests
 			initialGameState.Player2.Type.Should().Be(PlayerType.COMPUTER);
 
 			// Play random moves vs computer
-			GameBoardState currentBoardState = initialGameState.BoardState;
-			GameBoardState previousBoardState;
-			while(currentBoardState.Winner == null && actionCount < maxActionCount)
+			GameState currentState = initialGameState;
+			GameState previousState;
+			while(currentState.Stage != GameStage.GAME_OVER && actionCount < maxActionCount)
 			{
 				actionCount++;
-				GameAction nextMove = gameAi.CalculateComputerMove(currentBoardState, difficulty);
+				GameAction nextMove = gameAi.CalculateComputerMove(currentState.BoardState, difficulty);
 				GameActionRequest actionRequest = new GameActionRequest
 				{
 					GameId = initialGameState.Id,
 					Action = nextMove
 				};
-				System.Console.WriteLine($"Sending game move on turn {currentBoardState.TurnNumber}");
-				previousBoardState = currentBoardState;
-				currentBoardState = await connection.InvokeAsync<GameBoardState>(GameHubMethodNames.SEND_GAME_ACTION, actionRequest).ConfigureAwait(false);
+				System.Console.WriteLine($"Sending game move on turn {currentState.BoardState.TurnNumber}");
+				previousState = currentState;
+				currentState = await connection.InvokeAsync<GameState>(GameHubMethodNames.SEND_GAME_ACTION, actionRequest).ConfigureAwait(false);
 
 				// Check new BoardState
-				if(currentBoardState.Winner == null)
+				if(currentState.Stage != GameStage.GAME_OVER)
 				{
-					currentBoardState.TurnNumber.Should().Be(previousBoardState.TurnNumber + 2);
-					currentBoardState.CurrentTurn.Should().Be(initRequest.UserTurn);
-					System.Console.WriteLine($"Current Board State after computer move:\n{ToMatrixString(currentBoardState.Board)}");
+					currentState.BoardState.TurnNumber.Should().Be(previousState.BoardState.TurnNumber + 2);
+					currentState.BoardState.CurrentTurn.Should().Be(initRequest.UserTurn);
+					System.Console.WriteLine($"Current Board State after computer move:\n{ToMatrixString(currentState.BoardState.Board)}");
 				}
 				else
 				{
-					System.Console.WriteLine($"Game over, Winner is {currentBoardState.Winner} current state:\n{ToMatrixString(currentBoardState.Board)}");
+					System.Console.WriteLine($"Game over, Winner is {currentState.BoardState.Winner} current state:\n{ToMatrixString(currentState.BoardState.Board)}");
 				}
 			}
 		}

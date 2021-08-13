@@ -131,6 +131,7 @@ function resetCurrentGame(props: Props) {
 
 function canResetGame(props: Props): boolean {
     // Only games vs computer and finished games can be reset
+    if(props.game.type !== GameType.VS_COMPUTER) return false;
     if(props.game.stage !== GameStage.PLAYING) return false;
     if(props.game.boardState == null) {
         throw new Error("Board state must not be null while game stage is "+props.game.stage);

@@ -63,7 +63,7 @@ class BackendService {
 
     async sendGameActionAsync(request: GameActionRequest) {
         let response = await this._connection.invoke(ServerMethodNames.sendGameAction, request);
-        return response as GameBoardState;
+        return response as GameState;
     }
 
     async resetGameAsync(request: ResetGameRequest) {

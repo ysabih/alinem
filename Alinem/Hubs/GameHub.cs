@@ -50,7 +50,7 @@ namespace Alinem.Hubs
 		}
 
 		[HubMethodName(GameHubMethodNames.SEND_GAME_ACTION)]
-		public async Task<GameBoardState> SendGameActionAsync(GameActionRequest actionRequest)
+		public async Task<GameState> SendGameActionAsync(GameActionRequest actionRequest)
 		{
 			await Task.Delay(500).ConfigureAwait(false);
 
@@ -71,7 +71,7 @@ namespace Alinem.Hubs
 			{
 				if(newState.Stage == GameStage.GAME_OVER)
 				{
-					return newState.BoardState;
+					return newState;
 				}
 
 				int difficulty = serverState.DefaultGameDifficulty;
@@ -83,7 +83,7 @@ namespace Alinem.Hubs
 				// Update state in server
 				serverState.Games.AddOrUpdate(afterComputerMove.Id, (id) => afterComputerMove/*Will never be used*/, (id, oldState) => afterComputerMove);
 
-				return afterComputerMove.BoardState;
+				return afterComputerMove;
 			}
 			else
 			{
@@ -92,7 +92,7 @@ namespace Alinem.Hubs
 				//logger.LogInformation($"Sending game state update to player {player.Id}");
 				// update other player who is current player after updating state
 				await Clients.Client(player.Id).SendAsync(GameHubMethodNames.RECEIVE_GAME_STATE_UPDATE, newState).ConfigureAwait(false);
-				return newState.BoardState;
+				return newState;
 			}
 		}
 
