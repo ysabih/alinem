@@ -31,8 +31,9 @@ namespace Alinem.Hubs
 				Name = request.UserName,
 				Type = PlayerType.HUMAN
 			};
-			// User can quit game and start a new one in the same session => No need to check if user is already registered
-			serverState.Users.TryAdd(player.Id, player);
+			// This adds the player, if it's already added, it updates information
+			// This is useful to change the displayed user's name
+			serverState.AddOrUpdatePlayer(player);
 
 			switch(request.GameType)
 			{
@@ -52,11 +53,7 @@ namespace Alinem.Hubs
 		[HubMethodName(GameHubMethodNames.SEND_GAME_ACTION)]
 		public async Task<GameState> SendGameActionAsync(GameActionRequest actionRequest)
 		{
-			GameState gameState;
-			if(!serverState.Games.TryGetValue(actionRequest.GameId,out gameState))
-			{
-				throw new ArgumentException($"There is no current game with id {actionRequest.GameId}");
-			}
+			GameState gameState = serverState.GetGameState(actionRequest.GameId);
 			if(!gameLogic.ValidateGameAction(actionRequest, gameState))
 			{
 				// TODO: make error messages clearer
@@ -73,22 +70,17 @@ namespace Alinem.Hubs
 				}
 
 				int difficulty = serverState.DefaultGameDifficulty;
-				// Get computer's move and send new state to player
+				// Get computer's move and return new state to player
 				GameAction computerAction = gameAI.CalculateComputerMove(newState.BoardState, difficulty);
-
 				GameState afterComputerMove = gameLogic.ApplyAction(newState, computerAction);
 
-				// Update state in server
-				serverState.Games.AddOrUpdate(afterComputerMove.Id, (id) => afterComputerMove/*Will never be used*/, (id, oldState) => afterComputerMove);
-
+				serverState.UpdateGameState(afterComputerMove);
 				return afterComputerMove;
 			}
 			else
 			{
-				// Update state in server
-				serverState.Games.AddOrUpdate(newState.Id, (id) => newState/*Will never be used*/, (id, oldState) => newState);
-				//logger.LogInformation($"Sending game state update to player {player.Id}");
-				// update other player who is current player after updating state
+				serverState.UpdateGameState(newState);
+				// Notify opponent
 				await Clients.Client(player.Id).SendAsync(GameHubMethodNames.RECEIVE_GAME_STATE_UPDATE, newState).ConfigureAwait(false);
 				return newState;
 			}
@@ -99,11 +91,12 @@ namespace Alinem.Hubs
 		{
 			await Task.Delay(500).ConfigureAwait(false);
 			string userId = ExtractUserId();
-			GameState gameState;
-			bool gameExists = serverState.Games.TryGetValue(request.GameId, out gameState);
+			GameState gameState = null;
+			bool gameExists = serverState.Exists(request.GameId);
 			bool validUserId = false;  
 			if(gameExists)
 			{
+				gameState = serverState.GetGameState(request.GameId);
 				validUserId = gameState.Player1.Id == userId || gameState.Player2.Id == userId;
 			}
 			if(!gameExists || !validUserId)
@@ -127,11 +120,12 @@ namespace Alinem.Hubs
 			string userId = ExtractUserId();
 			// If game is vs computer delete it. If it's vs another player, send them notification then delete it.
 			// TODO: Factorize duplicate authorization code
-			GameState gameState;
-			bool gameExists = serverState.Games.TryGetValue(request.GameId, out gameState);
+			GameState gameState = null;
+			bool gameExists = serverState.Exists(request.GameId);
 			bool validUserId = false;
 			if (gameExists)
 			{
+				gameState = serverState.GetGameState(request.GameId);
 				validUserId = gameState.Player1.Id == userId || gameState.Player2.Id == userId;
 			}
 			if (!gameExists || !validUserId)
@@ -139,20 +133,14 @@ namespace Alinem.Hubs
 				throw new ArgumentException($"Game with id {request.GameId} not found");
 			}
 
-			if(gameState.Type == GameType.VS_RANDOM_PLAYER)
+			if (gameState.Type == GameType.VS_RANDOM_PLAYER && gameState.Stage == GameStage.PLAYING)
 			{
-				if(gameState.Stage == GameStage.WAITING_FOR_OPPONENT)
-				{
-					serverState.TryRemoveOpenGame(gameState.Id);
-				}
-				else if(gameState.Stage == GameStage.PLAYING)
-				{
-					// Send notification to other player
-					string otherPlayerId = gameState.Player1.Id == userId ? gameState.Player2.Id : gameState.Player1.Id;
-					await Clients.Client(otherPlayerId).SendAsync(GameHubMethodNames.RECEIVE_OPPONENT_QUIT_NOTIF).ConfigureAwait(false);
-				}
+				// Send notification to other player
+				string otherPlayerId = gameState.Player1.Id == userId ? gameState.Player2.Id : gameState.Player1.Id;
+				await Clients.Client(otherPlayerId).SendAsync(GameHubMethodNames.RECEIVE_OPPONENT_QUIT_NOTIF).ConfigureAwait(false);
 			}
-			serverState.Games.TryRemove(gameState.Id, out _);
+
+			serverState.RemoveGameIfExists(gameState.Id);
 		}
 
 		private string ExtractUserId()
@@ -169,7 +157,7 @@ namespace Alinem.Hubs
 				StartTimeUtc = DateTime.UtcNow,
 				Stage = GameStage.PLAYING,
 				Player1 = player,
-				Player2 = serverState.ComputerUser,
+				Player2 = serverState.ComputerPlayer,
 				BoardState = GameLogicUtils.InitializeGameBoard(playerTurn),
 				UserConnectionsState = new UserConnectionState[]
 				{
@@ -178,12 +166,7 @@ namespace Alinem.Hubs
 					UserConnectionState.CONNECTED
 				}
 			};
-
-			if (!serverState.Games.TryAdd(gameState.Id, gameState))
-			{
-				throw new ArgumentException($"Game with Id {gameState.Id} already exists");
-			}
-
+			serverState.AddNewGame(gameState);
 			return gameState;
 		}
 
@@ -192,24 +175,16 @@ namespace Alinem.Hubs
 			string randomGameId = serverState.PopRandomOpenGameId();
 			if (randomGameId != null)
 			{
-				// Update game state and notify opponent
-				GameState gameState;
-				if(!serverState.Games.TryGetValue(randomGameId, out gameState))
-				{
-					throw new ArgumentException($"There is no current game with id {randomGameId}");
-				}
-				// Update state to include new player and send notifications to players
-				// TODO: Make GameState immutable and update state more properly
+				// Update game state
+				GameState gameState = serverState.GetGameState(randomGameId);
 				GameState newState = gameLogic.AddPlayer(gameState, player);
-				serverState.Games.AddOrUpdate(newState.Id, (id) => newState/*Will never be used*/, (id, oldState) => newState);
-
+				serverState.UpdateGameState(newState);
+				// Notify opponent
 				await Clients.Client(newState.Player1.Id).SendAsync(GameHubMethodNames.RECEIVE_GAME_STATE_UPDATE, newState).ConfigureAwait(false);
 				return newState;
 			}
 			else
 			{
-				// player's turn is random vs human opponents
-				PlayerTurn playerTurn = GameLogicUtils.GetRandomTurn();
 				var gameState = new GameState
 				{
 					Id = Guid.NewGuid().ToString("N"),
@@ -218,20 +193,14 @@ namespace Alinem.Hubs
 					Stage = GameStage.WAITING_FOR_OPPONENT,
 					Player1 = player,
 					Player2 = null,
+					BoardState = null, /*Board will be initialized when second player joins the game*/
 					UserConnectionsState = new UserConnectionState[]
 					{
 						UserConnectionState.CONNECTED,
 						UserConnectionState.NOT_CONNECTED
 					}
 				};
-
-				if (!serverState.Games.TryAdd(gameState.Id, gameState))
-				{
-					throw new ArgumentException($"Game with Id {gameState.Id} already exists");
-				}
-				// Add it to open games
-				serverState.AddOpenGameId(gameState.Id);
-
+				serverState.AddNewGame(gameState);
 				return gameState;
 			}
 		}
