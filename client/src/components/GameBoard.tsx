@@ -144,7 +144,7 @@ function canReinitializeGame(props: Props): boolean {
     if(props.game.stage === GameStage.UNINITIALIZED) return false;
     if(props.game.type !== GameType.VS_RANDOM_PLAYER) return false;
 
-    return backendService.isConnected() && (props.game.stage === GameStage.GAME_OVER);
+    return backendService.isConnected() && (props.game.stage === GameStage.GAME_OVER || props.game.stage === GameStage.OPPONENT_LEFT);
 }
 
 function ExitGameButton(props: Props) {

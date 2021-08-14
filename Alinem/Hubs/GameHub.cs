@@ -52,8 +52,6 @@ namespace Alinem.Hubs
 		[HubMethodName(GameHubMethodNames.SEND_GAME_ACTION)]
 		public async Task<GameState> SendGameActionAsync(GameActionRequest actionRequest)
 		{
-			await Task.Delay(500).ConfigureAwait(false);
-
 			GameState gameState;
 			if(!serverState.Games.TryGetValue(actionRequest.GameId,out gameState))
 			{

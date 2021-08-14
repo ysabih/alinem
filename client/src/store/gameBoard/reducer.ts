@@ -119,6 +119,7 @@ export function gameReducer(state: GameState = unintializedState, action: GameAc
         case GameActionType.SET_OPPONENT_QUIT: {
             let newState: GameState = Object.assign({}, unintializedState);
             newState.stage = GameStage.OPPONENT_LEFT;
+            newState.type = state.type;
             return newState;
         }
 
