@@ -3,6 +3,7 @@
 	public static class GameHubMethodNames
 	{
 		public const string INIT_GAME = "InitGame";
+		public const string JOIN_PRIVATE_GAME = "JoinPrivateGame";
 		public const string SEND_GAME_ACTION = "SendGameAction";
 		public const string RESET_GAME = "ResetGame";
 		public const string QUIT_GAME = "QuitGame";

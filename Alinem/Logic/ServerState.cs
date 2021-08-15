@@ -79,6 +79,13 @@ namespace Alinem.Logic
 					OpenGames.Remove(gameId);
 				}
 			}
+			else if (gameState.Type == GameType.VS_FRIEND && gameState.Stage == GameStage.WAITING_FOR_OPPONENT)
+			{
+				lock (OpenGamesLock)
+				{
+					OpenGames.Remove(gameId);
+				}
+			}
 			return removed;
 		}
 
@@ -100,7 +107,7 @@ namespace Alinem.Logic
 			Players.AddOrUpdate(player.Id, player, (id, oldValue) => { return player; });
 		}
 
-		private void AddOpenGameId(string gameId)
+		private static void AddOpenGameId(string gameId)
 		{
 			lock (OpenGamesLock)
 			{

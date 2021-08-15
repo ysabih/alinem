@@ -9,6 +9,12 @@ namespace Alinem.Models
 		public GameType GameType { get; set; }
 	}
 
+	public class JoinPrivateGameRequest
+	{
+		public string GameId { get; set; }
+		public string UserName { get; set; }
+	}
+
 	public class QuitGameRequest
 	{
 		public string GameId { get; set; }

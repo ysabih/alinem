@@ -338,6 +338,81 @@ namespace Alinem.IntegrationTests
 			#endregion
 		}
 
+		[Test]
+		public async Task Test_Join_Private_Game()
+		{
+			// Doesn't depend on server's state as opposed to the Game_Vs_Random_Opponent test
+			#region Game initialization
+			var initRequest = new InitGameRequest
+			{
+				UserName = "IntrovertPlayer",
+				GameType = GameType.VS_RANDOM_PLAYER
+			};
+
+			// Request game by player1
+			HubConnection firstPlayerConnection = await StartNewConnectionAsync().ConfigureAwait(false);
+			GameState initialGameState = await firstPlayerConnection.InvokeAsync<GameState>(GameHubMethodNames.INIT_GAME, initRequest).ConfigureAwait(false);
+
+			initialGameState.Should().NotBeNull();
+			initialGameState.BoardState.Should().BeNull();
+			initialGameState.Player1.Should().BeEquivalentTo(new Player
+			{
+				Id = ExtractUserId(firstPlayerConnection),
+				Name = initRequest.UserName,
+				Type = PlayerType.HUMAN
+			}, "Player 1 must be the one who requested new game");
+			initialGameState.Stage.Should().Be(GameStage.WAITING_FOR_OPPONENT);
+			initialGameState.Player2.Should().Be(null);
+
+			bool player1Notified = false;
+			GameState player1NotificationGameState = null;
+			Semaphore player1NotificationSem = new Semaphore(0, 1);
+			// Setup gameStateUpdate message handler for player 1
+			firstPlayerConnection.On<GameState>(GameHubMethodNames.RECEIVE_GAME_STATE_UPDATE, (newGameState) =>
+			{
+				if (!player1Notified)
+				{
+					// First game state update, Just store the state to compare it to state received by player2
+					player1NotificationGameState = newGameState;
+					player1Notified = true;
+					player1NotificationSem.Release();
+				}
+			});
+
+			// Request game by player2
+			HubConnection secondPlayerConnection = await StartNewConnectionAsync().ConfigureAwait(false);
+			secondPlayerConnection.ConnectionId.Should().NotBe(firstPlayerConnection.ConnectionId); // Just to be safe
+
+			var joinRequest = new JoinPrivateGameRequest
+			{
+				GameId = initialGameState.Id,
+				UserName = "Introvert's Bud"
+			};
+			GameState joinedGameState = await secondPlayerConnection.InvokeAsync<GameState>(GameHubMethodNames.JOIN_PRIVATE_GAME, joinRequest).ConfigureAwait(false);
+
+			joinedGameState.Id.Should().Be(initialGameState.Id);
+			joinedGameState.Stage.Should().Be(GameStage.PLAYING);
+			joinedGameState.Player2.Should().BeEquivalentTo(new Player
+			{
+				Id = ExtractUserId(secondPlayerConnection),
+				Name = joinRequest.UserName,
+				Type = PlayerType.HUMAN
+			}, "Player 1 must be the one who requested new game");
+			joinedGameState.BoardState.Should().NotBeNull();
+
+			// Wait for notification handler to finish
+			if (player1NotificationSem.WaitOne(80000))
+			{
+				player1Notified.Should().Be(true);
+				joinedGameState.Should().BeEquivalentTo(player1NotificationGameState);
+			}
+			else
+			{
+				Assert.Fail("Timeout waiting for first player connection to handle notification");
+			}
+			#endregion
+		}
+
 		private static async Task<HubConnection> StartNewConnectionAsync()
 		{
 			var connection = new HubConnectionBuilder()

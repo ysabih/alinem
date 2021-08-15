@@ -45,9 +45,31 @@ namespace Alinem.Hubs
 				{
 					return await InitializeOrJoinGameVsRandomOpponent(player).ConfigureAwait(false);
 				}
+				case GameType.VS_FRIEND:
+				{
+					return InitializeGameVsFriend(player);
+				}
 				default:
 					throw new ArgumentException($"Unsupported game type: ${request.GameType}");
 			}
+		}
+
+		[HubMethodName(GameHubMethodNames.JOIN_PRIVATE_GAME)]
+		public async Task<GameState> JoinPrivateGameAsync(JoinPrivateGameRequest request)
+		{
+			string userId = ExtractUserId();
+			var player = new Player()
+			{
+				Id = userId,
+				Name = request.UserName,
+				Type = PlayerType.HUMAN
+			};
+			// This adds the player, if it's already added, it updates information
+			// This is useful to change the displayed user's name
+			serverState.AddOrUpdatePlayer(player);
+
+			GameState newState = await JoinGameAsync(request.GameId, player).ConfigureAwait(true);
+			return newState;
 		}
 
 		[HubMethodName(GameHubMethodNames.SEND_GAME_ACTION)]
@@ -175,13 +197,7 @@ namespace Alinem.Hubs
 			string randomGameId = serverState.PopRandomOpenGameId();
 			if (randomGameId != null)
 			{
-				// Update game state
-				GameState gameState = serverState.GetGameState(randomGameId);
-				GameState newState = gameLogic.AddPlayer(gameState, player);
-				serverState.UpdateGameState(newState);
-				// Notify opponent
-				await Clients.Client(newState.Player1.Id).SendAsync(GameHubMethodNames.RECEIVE_GAME_STATE_UPDATE, newState).ConfigureAwait(false);
-				return newState;
+				return await JoinGameAsync(randomGameId, player).ConfigureAwait(false);
 			}
 			else
 			{
@@ -203,6 +219,32 @@ namespace Alinem.Hubs
 				serverState.AddNewGame(gameState);
 				return gameState;
 			}
+		}
+
+		private GameState InitializeGameVsFriend(Player player)
+		{
+			var gameState = new GameState
+			{
+				Id = Guid.NewGuid().ToString("N"),
+				Type = GameType.VS_FRIEND,
+				StartTimeUtc = DateTime.UtcNow,
+				Stage = GameStage.WAITING_FOR_OPPONENT,
+				Player1 = player,
+				Player2 = null,
+				BoardState = null, /*Board will be initialized when second player joins the game*/
+			};
+			serverState.AddNewGame(gameState);
+			return gameState;
+		}
+
+		private async Task<GameState> JoinGameAsync(string gameId, Player player)
+		{
+			GameState gameState = serverState.GetGameState(gameId);
+			GameState newState = gameLogic.AddPlayer(gameState, player);
+			serverState.UpdateGameState(newState);
+			// Notify opponent
+			await Clients.Client(newState.Player1.Id).SendAsync(GameHubMethodNames.RECEIVE_GAME_STATE_UPDATE, newState).ConfigureAwait(false);
+			return newState;
 		}
 	}
 }
