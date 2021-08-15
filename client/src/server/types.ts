@@ -6,6 +6,11 @@ export interface InitGameRequest {
     gameType: GameType
 }
 
+export interface JoinPrivateGameRequest {
+    gameId: string,
+    userName: string
+}
+
 export interface ResetGameRequest {
     gameId: string,
     userTurn: PlayerTurn

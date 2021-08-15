@@ -34,7 +34,6 @@ export interface GameState {
     player1: Player,
     player2: Player | null, /*Can be null when still waiting for opponent*/
     boardState: GameBoardState | null, /*Can be null when not playing yet (e.g. when waiting for opponent)*/
-    userConnectionsState: UserConnectionState[]
 }
 
 export interface GameBoardState {
@@ -50,12 +49,6 @@ export interface Player {
     id: string,
     name: string,
     type: PlayerType
-}
-
-export enum UserConnectionState {
-    CONNECTED = "CONNECTED",
-	NOT_CONNECTED = "NOT_CONNECTED",
-	ABORTED = "ABORTED"
 }
 
 export enum GameType {

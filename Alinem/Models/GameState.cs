@@ -11,7 +11,6 @@ namespace Alinem.Models
 		public Player Player1 { get; set; }
 		public Player Player2 { get; set; }
 		public GameBoardState BoardState { get; set; }
-		public UserConnectionState[] UserConnectionsState { get; set; }
 	}
 
 	public class GameBoardState

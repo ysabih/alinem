@@ -57,6 +57,7 @@ namespace Alinem.Hubs
 		[HubMethodName(GameHubMethodNames.JOIN_PRIVATE_GAME)]
 		public async Task<GameState> JoinPrivateGameAsync(JoinPrivateGameRequest request)
 		{
+			await Task.Delay(1000).ConfigureAwait(false);
 			string userId = ExtractUserId();
 			var player = new Player()
 			{
@@ -155,7 +156,8 @@ namespace Alinem.Hubs
 				throw new ArgumentException($"Game with id {request.GameId} not found");
 			}
 
-			if (gameState.Type == GameType.VS_RANDOM_PLAYER && gameState.Stage == GameStage.PLAYING)
+			bool vsHuman = gameState.Type == GameType.VS_RANDOM_PLAYER || gameState.Type == GameType.VS_FRIEND;
+			if (vsHuman && gameState.Stage == GameStage.PLAYING)
 			{
 				// Send notification to other player
 				string otherPlayerId = gameState.Player1.Id == userId ? gameState.Player2.Id : gameState.Player1.Id;
@@ -180,13 +182,7 @@ namespace Alinem.Hubs
 				Stage = GameStage.PLAYING,
 				Player1 = player,
 				Player2 = serverState.ComputerPlayer,
-				BoardState = GameLogicUtils.InitializeGameBoard(playerTurn),
-				UserConnectionsState = new UserConnectionState[]
-				{
-					// Requester is connected and computer is always connected
-					UserConnectionState.CONNECTED,
-					UserConnectionState.CONNECTED
-				}
+				BoardState = GameLogicUtils.InitializeGameBoard(playerTurn)
 			};
 			serverState.AddNewGame(gameState);
 			return gameState;
@@ -210,11 +206,6 @@ namespace Alinem.Hubs
 					Player1 = player,
 					Player2 = null,
 					BoardState = null, /*Board will be initialized when second player joins the game*/
-					UserConnectionsState = new UserConnectionState[]
-					{
-						UserConnectionState.CONNECTED,
-						UserConnectionState.NOT_CONNECTED
-					}
 				};
 				serverState.AddNewGame(gameState);
 				return gameState;

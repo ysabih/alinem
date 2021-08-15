@@ -1,6 +1,6 @@
 import { isWinner, checkValidMove, checkValidPut, getPositionState } from '../../utils/gameRulesHelpers';
 import {PutPieceAction, GameAction, GameActionType, 
-        GameBoardState, GameMode, MovePieceAction, PlayerTurn, PointState, SelectPieceAction, ApplyGameStateAction, GameState, UserConnectionState, PlayerType, ApplyBoardStateAction, GameStage, GameType} from './types';
+        GameBoardState, GameMode, MovePieceAction, PlayerTurn, PointState, SelectPieceAction, ApplyGameStateAction, GameState, PlayerType, ApplyBoardStateAction, GameStage, GameType} from './types';
 
 const BOARD_ROW_LENGTH = 3;
 const unintializedState: GameState = {
@@ -14,10 +14,6 @@ const unintializedState: GameState = {
         type: PlayerType.COMPUTER
     },
     player2: null,
-    userConnectionsState: [
-        UserConnectionState.NOT_CONNECTED,
-        UserConnectionState.NOT_CONNECTED
-    ],
     boardState: null,
 }
 

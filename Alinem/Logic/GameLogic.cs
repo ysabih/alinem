@@ -48,7 +48,6 @@ namespace Alinem.Logic
 				Player1 = currentState.Player1,
 				Player2 = currentState.Player2,
 				Stage = winner == null ? GameStage.PLAYING : GameStage.GAME_OVER,
-				UserConnectionsState = currentState.UserConnectionsState,
 				BoardState = newBoardState
 			};
 		}
@@ -84,12 +83,6 @@ namespace Alinem.Logic
 				Player1 = gameState.Player1,
 				Player2 = newPlayer,
 				Stage = GameStage.PLAYING,
-				UserConnectionsState = new[]
-				{
-					gameState.UserConnectionsState[0],
-					// We assume the method was called because the new player is connected
-					UserConnectionState.CONNECTED
-				},
 				BoardState = GameLogicUtils.InitializeGameBoard(GameLogicUtils.GetRandomTurn())
 			};
 		}

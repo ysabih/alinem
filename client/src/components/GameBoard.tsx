@@ -1,18 +1,19 @@
 import React, { useEffect, useState } from 'react';
 import { connect } from 'react-redux';
-import { GameBoardState, GameStage, GameState, GameType, PlayerTurn, PlayerType, PointState} from '../store/gameBoard/types';
+import { GameBoardState, GameStage, GameState, GameType, PlayerTurn, PointState} from '../store/gameBoard/types';
 import { ApplicationState} from '../store/index'
 import GamePosition from './GamePosition';
 import { UserState } from '../store/user/types';
 import { backendService } from '../server/backendService'
 import LoadingSpinner from './LoadingSpinner';
-import { InitGameRequest, QuitGameRequest, ResetGameRequest } from '../server/types';
+import { InitGameRequest, JoinPrivateGameRequest, QuitGameRequest, ResetGameRequest } from '../server/types';
 import { applyGameBoardState, applyGameState, resetGameState, setOpponentLeftState } from '../store/gameBoard/actions';
 import { BlockingUIState } from '../store/ui/types';
 import { setBlockingUI } from '../store/ui/actions';
 import { runBlockingAsync } from '../utils/componentHelpers';
 import { Link } from 'react-router-dom';
 import { getCurrentPlayerId } from '../utils/gameRulesHelpers';
+import { StartMode } from './types';
 
 interface StateProps {
     blockingUI: BlockingUIState,
@@ -27,7 +28,9 @@ interface DispatchProps {
     setOpponentLeftState: typeof setOpponentLeftState
 }
 interface OwnProps {
-    gameType: GameType
+    gameType: GameType | null,
+    gameId: string | null,
+    startMode: StartMode
 }
 type Props = StateProps & DispatchProps & OwnProps;
 
@@ -36,7 +39,8 @@ function GameBoard(props: Props) {
 
     // Init game on server
     useEffect(() => {
-        runBlockingAsync(initializeAsync, "Initializing new game...", props.setBlockingUI);
+        let loadingMessage = props.startMode === StartMode.Start? 'Initializing a new game...' : 'Connecting...';
+        runBlockingAsync(initializeAsync, loadingMessage, props.setBlockingUI);
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
@@ -67,16 +71,38 @@ function GameBoard(props: Props) {
 
 async function initGameAsync(props: Props) {
     await backendService.connectAsync();
+
+    let gameState: GameState;
     // initiate game on server first
-    let initRequest: InitGameRequest = {
-        gameType: props.gameType,
-        userName: props.user.name,
-        // TODO: Make this configurable
-        userTurn: PlayerTurn.ONE
+    switch (props.startMode) {
+        case StartMode.Start: {
+            if(!props.gameType) {
+                throw new Error("GameType prop is required");
+            }
+            let initRequest: InitGameRequest = {
+                gameType: props.gameType,
+                userName: props.user.name,
+                // TODO: Make this configurable
+                userTurn: PlayerTurn.ONE
+            }
+            gameState = await backendService.initGameAsync(initRequest);
+            
+            break;
+        }
+        case StartMode.Join: {
+            if(!props.gameId) {
+                throw new Error("GameId parameter is required");
+            }
+            let joinRequest: JoinPrivateGameRequest = {
+                gameId: props.gameId,
+                userName: props.user.name
+            }
+            gameState = await backendService.joinPrivateGameAsync(joinRequest);
+        }
     }
-    let gameState = await backendService.initGameAsync(initRequest);
+
     if(!gameState) {
-        throw new Error("New board state cannot be falsy, value: " + gameState);
+        throw new Error("New state cannot be falsy, value: " + gameState);
     }
     console.debug("Initialized game on server, booard state: ", gameState);
     backendService.registerGameStateUpdateHandler((newState: GameState) => {
@@ -149,7 +175,7 @@ function canReinitializeGame(props: Props): boolean {
 
 function ExitGameButton(props: Props) {
     return (
-    <Link className='col col-auto btn btn-lg btn-primary' to='' 
+    <Link className='col col-auto btn btn-lg btn-danger' to='' 
         style={{display: canQuitGame(props) ? 'inline' : 'none'}} 
         onClick={() => quitCurrentGame(props)}>EXIT</Link>
     );
@@ -193,9 +219,22 @@ function GameBoardCore(props: Props) {
             );
         }
         case GameStage.WAITING_FOR_OPPONENT: {
-            return (
-                <h3>Waiting for a player to join the game</h3>
-            );
+            if(props.game.type === GameType.VS_RANDOM_PLAYER) {
+                return (
+                    <>
+                    <h4 className="text-center">Waiting for a player to join the game</h4>
+                    <SmallLoadingSpinner />
+                    </>
+                );
+            }
+            else if(props.game.type === GameType.VS_FRIEND) {
+                return (
+                    <WaitingForOpponentInPrivateGame {...props} />
+                );
+            }
+            else{
+                throw new Error(`Unsupported game type ${props.game.type} when waiting for opponent`)
+            }
         }
         case GameStage.OPPONENT_LEFT: {
             return (
@@ -206,6 +245,40 @@ function GameBoardCore(props: Props) {
             throw new Error("Unsupported game stage: "+props.game.stage);
         }
     }
+}
+
+function WaitingForOpponentInPrivateGame(props: Props) {
+    const [joinGameUrl, setJoinGameUrl] = useState("");
+    const [copiedUrl, setCopiedUrl] = useState(false);
+    useEffect(() => {
+        setJoinGameUrl(`${window.location.origin.toString()}/join/${props.game.id}`);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    function copyGameUrl() {
+        if(window.isSecureContext) {
+            navigator.clipboard.writeText(joinGameUrl);
+            setTimeout(() => {setCopiedUrl(false)}, 1000);
+            setCopiedUrl(true);
+        }
+    }
+    
+    let copyButtonClass = copiedUrl ? 'btn btn-success' : 'btn btn-primary';
+    return (
+        <>
+            <h4 className="text-center">Waiting for opponent</h4>
+            <SmallLoadingSpinner />
+            <h5 className="text-center mt-5">Share the link with your friend</h5>
+            <div className="input-group mb-3">
+                <input type="text" className="form-control" readOnly
+                    aria-label="Amount (to the nearest dollar)" 
+                    value={joinGameUrl}/>
+                <div className="input-group-append">
+                    <button className={copyButtonClass} onClick={copyGameUrl}>{copiedUrl? 'Copied !' : 'Copy'}</button>
+                </div>
+            </div>
+        </>
+    );
 }
 
 function GameHUD(props: StateProps){
@@ -232,6 +305,14 @@ function GameHUD(props: StateProps){
         <div className="col-sm-5 text-right p-2" style={{border: playerTwoBorder, borderRadius: 8}}><span className="h4" style={{color: "blue"}}>{playerNames[1]}</span></div>
     </div>
     </div>
+    );
+}
+
+function SmallLoadingSpinner() {
+    return (
+        <div className="row justify-content-center mt-3">
+            <div className="spinner-border spinner" role="status" style={{opacity: 0.5}}></div>
+        </div>
     );
 }
 

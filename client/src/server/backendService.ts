@@ -1,12 +1,13 @@
 import { HubConnection, HubConnectionBuilder, HubConnectionState, LogLevel } from '@microsoft/signalr'
 import { GameBoardState, GameState } from '../store/gameBoard/types';
-import { GameActionRequest, InitGameRequest, QuitGameRequest, ResetGameRequest } from './types';
+import { GameActionRequest, InitGameRequest, JoinPrivateGameRequest, QuitGameRequest, ResetGameRequest } from './types';
 
 const BacknedUrl = "http://localhost:5000";
 const GamehubRoute = "gamehub"
 
 const ServerMethodNames = {
     initGame: "InitGame",
+    JoinPrivateGame: "JoinPrivateGame",
     quitGame: "QuitGame",
     resetGame: "ResetGame",
     sendGameAction: "SendGameAction",
@@ -53,6 +54,11 @@ class BackendService {
 
     async initGameAsync(request: InitGameRequest) {
         let response = await this._connection.invoke(ServerMethodNames.initGame, request);
+        return response as GameState;
+    }
+
+    async joinPrivateGameAsync(request: JoinPrivateGameRequest) {
+        let response = await this._connection.invoke(ServerMethodNames.JoinPrivateGame, request);
         return response as GameState;
     }
 
