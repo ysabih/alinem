@@ -31,9 +31,6 @@ namespace Alinem.Hubs
 				Name = request.UserName,
 				Type = PlayerType.HUMAN
 			};
-			// This adds the player, if it's already added, it updates information
-			// This is useful to change the displayed user's name
-			serverState.AddOrUpdatePlayer(player);
 
 			switch(request.GameType)
 			{
@@ -65,9 +62,6 @@ namespace Alinem.Hubs
 				Name = request.UserName,
 				Type = PlayerType.HUMAN
 			};
-			// This adds the player, if it's already added, it updates information
-			// This is useful to change the displayed user's name
-			serverState.AddOrUpdatePlayer(player);
 
 			GameState newState = await JoinGameAsync(request.GameId, player).ConfigureAwait(true);
 			return newState;
@@ -138,7 +132,7 @@ namespace Alinem.Hubs
 		}
 
 		[HubMethodName(GameHubMethodNames.QUIT_GAME)]
-		public async Task QuitGameAsync(QuitGameRequest request)
+		public Task QuitGameAsync(QuitGameRequest request)
 		{
 			string userId = ExtractUserId();
 			// If game is vs computer delete it. If it's vs another player, send them notification then delete it.
@@ -156,20 +150,35 @@ namespace Alinem.Hubs
 				throw new ArgumentException($"Game with id {request.GameId} not found");
 			}
 
-			bool vsHuman = gameState.Type == GameType.VS_RANDOM_PLAYER || gameState.Type == GameType.VS_FRIEND;
-			if (vsHuman && gameState.Stage == GameStage.PLAYING)
-			{
-				// Send notification to other player
-				string otherPlayerId = gameState.Player1.Id == userId ? gameState.Player2.Id : gameState.Player1.Id;
-				await Clients.Client(otherPlayerId).SendAsync(GameHubMethodNames.RECEIVE_OPPONENT_QUIT_NOTIF).ConfigureAwait(false);
-			}
+			return HandlePlayerLeftGameAsync(userId, gameState);
+		}
 
-			serverState.RemoveGameIfExists(gameState.Id);
+		public override Task OnDisconnectedAsync(Exception exception)
+		{
+			string playerId = ExtractUserId();
+			GameState gameState = serverState.GetCurrentlyPlayedGame(playerId);
+			if (gameState == null) return Task.CompletedTask;
+
+			return HandlePlayerLeftGameAsync(playerId, gameState);
 		}
 
 		private string ExtractUserId()
 		{
 			return Context.ConnectionId;
+		}
+
+		private async Task HandlePlayerLeftGameAsync(string playerId, GameState gameState)
+		{
+			bool vsHuman = gameState.Type == GameType.VS_RANDOM_PLAYER || gameState.Type == GameType.VS_FRIEND;
+			if (vsHuman && gameState.Stage == GameStage.PLAYING)
+			{
+				// Send notification to other player
+				string otherPlayerId = gameState.Player1.Id == playerId ? gameState.Player2.Id : gameState.Player1.Id;
+				await Clients.Client(otherPlayerId).SendAsync(GameHubMethodNames.RECEIVE_OPPONENT_QUIT_NOTIF).ConfigureAwait(false);
+			}
+
+			serverState.TryRemovePlayer(playerId);
+			serverState.RemoveGameIfExists(gameState.Id);
 		}
 
 		private GameState InitializeGameVsComputer(Player player, PlayerTurn playerTurn)
@@ -184,7 +193,7 @@ namespace Alinem.Hubs
 				Player2 = serverState.ComputerPlayer,
 				BoardState = GameLogicUtils.InitializeGameBoard(playerTurn)
 			};
-			serverState.AddNewGame(gameState);
+			serverState.AddNewGame(gameState, player);
 			return gameState;
 		}
 
@@ -207,7 +216,7 @@ namespace Alinem.Hubs
 					Player2 = null,
 					BoardState = null, /*Board will be initialized when second player joins the game*/
 				};
-				serverState.AddNewGame(gameState);
+				serverState.AddNewGame(gameState, player);
 				return gameState;
 			}
 		}
@@ -224,7 +233,7 @@ namespace Alinem.Hubs
 				Player2 = null,
 				BoardState = null, /*Board will be initialized when second player joins the game*/
 			};
-			serverState.AddNewGame(gameState);
+			serverState.AddNewGame(gameState, player);
 			return gameState;
 		}
 
@@ -232,7 +241,7 @@ namespace Alinem.Hubs
 		{
 			GameState gameState = serverState.GetGameState(gameId);
 			GameState newState = gameLogic.AddPlayer(gameState, player);
-			serverState.UpdateGameState(newState);
+			serverState.UpdateGameState(newState, addedSecondPlayer: true);
 			// Notify opponent
 			await Clients.Client(newState.Player1.Id).SendAsync(GameHubMethodNames.RECEIVE_GAME_STATE_UPDATE, newState).ConfigureAwait(false);
 			return newState;

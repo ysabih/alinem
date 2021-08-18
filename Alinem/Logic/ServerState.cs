@@ -10,6 +10,8 @@ namespace Alinem.Logic
 	{
 		private static readonly Player ComputerPlayer;
 		private static readonly ConcurrentDictionary<string, Player> Players;
+		// We assume each player plays only one game at a time
+		private static readonly ConcurrentDictionary<string, string> PlayerToGamesMap;
 		private static readonly ConcurrentDictionary<string, GameState> Games;
 
 		static ServerState()
@@ -21,6 +23,7 @@ namespace Alinem.Logic
 				Type = PlayerType.COMPUTER
 			};
 			Players = new ConcurrentDictionary<string, Player>(new Dictionary<string, Player>() { { ComputerPlayer.Id, ComputerPlayer } });
+			PlayerToGamesMap = new ConcurrentDictionary<string, string>();
 			Games = new ConcurrentDictionary<string, GameState>();
 		}
 
@@ -33,7 +36,7 @@ namespace Alinem.Logic
 
 		Player IServerState.ComputerPlayer => ComputerPlayer;
 
-		public void AddNewGame(GameState gameState)
+		public void AddNewGame(GameState gameState, Player firstPlayer)
 		{
 			if (!Games.TryAdd(gameState.Id, gameState))
 			{
@@ -43,6 +46,7 @@ namespace Alinem.Logic
 			{
 				AddOpenGameId(gameState.Id);
 			}
+			AddOrUpdatePlayer(firstPlayer, gameState.Id);
 		}
 
 		public bool Exists(string gameId)
@@ -60,12 +64,34 @@ namespace Alinem.Logic
 			return gameState;
 		}
 
-		public void UpdateGameState(GameState newState)
+		public GameState GetCurrentlyPlayedGame(string playerId)
+		{
+			if(!PlayerToGamesMap.TryGetValue(playerId, out string gameId))
+			{
+				return null;/*No active player with given id or no game is being played by this player*/
+			}
+			if (!Games.TryGetValue(gameId, out GameState gameState))
+			{
+				return null;
+			}
+			return gameState;
+		}
+
+		public void UpdateGameState(GameState newState, bool addedSecondPlayer)
 		{
 			Games.AddOrUpdate(newState.Id,
 				// If client code tries to udpate a game that doesn't exist, something is wrong
 				(id) => { throw new ArgumentException($"Game with id \'{newState.Id}\' does not exists"); },
 				(id, oldState) => newState);
+
+			if(addedSecondPlayer)
+			{
+				if(newState.Player2 == null)
+				{
+					throw new ArgumentException("Player 2 cannot be null while addedSecondPlayer parameter is set to true");
+				}
+				AddOrUpdatePlayer(newState.Player2, newState.Id);
+			}
 		}
 
 		public bool RemoveGameIfExists(string gameId)
@@ -102,9 +128,16 @@ namespace Alinem.Logic
 			}
 		}
 
-		public void AddOrUpdatePlayer(Player player)
+		public void TryRemovePlayer(string playerId)
 		{
-			Players.AddOrUpdate(player.Id, player, (id, oldValue) => { return player; });
+			Players.TryRemove(playerId, out _);
+			PlayerToGamesMap.TryRemove(playerId, out _);
+		}
+
+		private void AddOrUpdatePlayer(Player player, string gameId)
+		{
+			Players.AddOrUpdate(player.Id, player, (id, oldValue) => player);
+			PlayerToGamesMap.AddOrUpdate(player.Id, gameId, (id, oldValue) => gameId);
 		}
 
 		private static void AddOpenGameId(string gameId)

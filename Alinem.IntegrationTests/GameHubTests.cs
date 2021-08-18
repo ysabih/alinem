@@ -241,7 +241,9 @@ namespace Alinem.IntegrationTests
 		}
 
 		[Test]
-		public async Task Test_Opponent_Is_Notified_When_User_Quits_Game()
+		[TestCase(QuitMethod.Message)]
+		[TestCase(QuitMethod.Disconnect)]
+		public async Task Test_Opponent_Is_Notified_When_User_Quits_Game(QuitMethod quitMethod)
 		{
 			// TODO: Refactor duplicate code
 			#region Game initialization
@@ -324,8 +326,21 @@ namespace Alinem.IntegrationTests
 				quitNotificationSem.Release();
 			});
 
-			// Send quit game message from player1
-			await firstPlayerConnection.InvokeAsync(GameHubMethodNames.QUIT_GAME, new QuitGameRequest { GameId = joinedGameState.Id }).ConfigureAwait(false);
+			switch(quitMethod)
+			{
+				case QuitMethod.Message:
+				{
+					await firstPlayerConnection.InvokeAsync(GameHubMethodNames.QUIT_GAME, new QuitGameRequest { GameId = joinedGameState.Id }).ConfigureAwait(false);
+					break;
+				}
+				case QuitMethod.Disconnect:
+				{
+					await firstPlayerConnection.StopAsync().ConfigureAwait(false);
+					break;
+				}
+				default:
+					throw new ArgumentException($"Quitting method '{quitMethod}' not implemented");
+			}
 
 			if (quitNotificationSem.WaitOne(10000))
 			{
@@ -446,6 +461,12 @@ namespace Alinem.IntegrationTests
 				s.AppendLine();
 			}
 			return s.ToString();
+		}
+
+		public enum QuitMethod
+		{
+			Message,
+			Disconnect
 		}
 	}
 }
