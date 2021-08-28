@@ -45,4 +45,10 @@ namespace Alinem.Models
 	{
 		public Point Position { get; set; }
 	}
+
+	public class GameNotification
+	{
+		public GameAction LastAction { get; set; }
+		public GameState NewGameState { get; set; }
+	}
 }

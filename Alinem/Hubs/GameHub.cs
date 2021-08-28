@@ -8,7 +8,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Alinem.Hubs
 {
-	public class GameHub : Hub
+	public class GameHub : Hub<IGameHubClient>
 	{
 		private readonly IServerState serverState;
 		private readonly IGameLogic gameLogic;
@@ -68,7 +68,7 @@ namespace Alinem.Hubs
 		}
 
 		[HubMethodName(GameHubMethodNames.SEND_GAME_ACTION)]
-		public async Task<GameState> SendGameActionAsync(GameActionRequest actionRequest)
+		public async Task<GameNotification> SendGameActionAsync(GameActionRequest actionRequest)
 		{
 			GameState gameState = serverState.GetGameState(actionRequest.GameId);
 			if(!gameLogic.ValidateGameAction(actionRequest, gameState))
@@ -83,7 +83,7 @@ namespace Alinem.Hubs
 			{
 				if(newState.Stage == GameStage.GAME_OVER)
 				{
-					return newState;
+					return new GameNotification { NewGameState = newState};
 				}
 
 				int difficulty = serverState.DefaultGameDifficulty;
@@ -92,14 +92,22 @@ namespace Alinem.Hubs
 				GameState afterComputerMove = gameLogic.ApplyAction(newState, computerAction);
 
 				serverState.UpdateGameState(afterComputerMove);
-				return afterComputerMove;
+				return new GameNotification { 
+					LastAction = computerAction,
+					NewGameState = afterComputerMove
+				};
 			}
 			else
 			{
 				serverState.UpdateGameState(newState);
 				// Notify opponent
-				await Clients.Client(player.Id).SendAsync(GameHubMethodNames.RECEIVE_GAME_STATE_UPDATE, newState).ConfigureAwait(false);
-				return newState;
+				var notification = new GameNotification
+				{
+					NewGameState = newState,
+					LastAction = actionRequest.Action
+				};
+				await Clients.Client(player.Id).ReceiveGameStateUpdate(notification).ConfigureAwait(false);
+				return notification;
 			}
 		}
 
@@ -174,7 +182,7 @@ namespace Alinem.Hubs
 			{
 				// Send notification to other player
 				string otherPlayerId = gameState.Player1.Id == playerId ? gameState.Player2.Id : gameState.Player1.Id;
-				await Clients.Client(otherPlayerId).SendAsync(GameHubMethodNames.RECEIVE_OPPONENT_QUIT_NOTIF).ConfigureAwait(false);
+				await Clients.Client(otherPlayerId).ReceiveOpponentQuitNotif().ConfigureAwait(false);
 			}
 
 			serverState.TryRemovePlayer(playerId);
@@ -243,7 +251,11 @@ namespace Alinem.Hubs
 			GameState newState = gameLogic.AddPlayer(gameState, player);
 			serverState.UpdateGameState(newState, addedSecondPlayer: true);
 			// Notify opponent
-			await Clients.Client(newState.Player1.Id).SendAsync(GameHubMethodNames.RECEIVE_GAME_STATE_UPDATE, newState).ConfigureAwait(false);
+			var notification = new GameNotification
+			{
+				NewGameState = newState
+			};
+			await Clients.Client(newState.Player1.Id).ReceiveGameStateUpdate(notification).ConfigureAwait(false);
 			return newState;
 		}
 	}

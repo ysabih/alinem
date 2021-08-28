@@ -98,6 +98,8 @@ namespace Alinem.Logic
 		{
 			GameState gameState = null;
 			bool removed = Games.TryRemove(gameId, out gameState);
+			if (!removed) return false;
+
 			if(gameState.Type == GameType.VS_RANDOM_PLAYER && gameState.Stage == GameStage.WAITING_FOR_OPPONENT)
 			{
 				lock(OpenGamesLock)

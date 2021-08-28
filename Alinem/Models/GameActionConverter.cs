@@ -17,6 +17,8 @@ namespace Alinem.Models
 
         public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
         {
+            if (reader.TokenType == JsonToken.Null) return null;
+
             JObject jo = JObject.Load(reader);
             if (jo["position"] != null)
             {

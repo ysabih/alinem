@@ -62,9 +62,10 @@ namespace Alinem.IntegrationTests
 					GameId = initialGameState.Id,
 					Action = nextMove
 				};
-				System.Console.WriteLine($"Sending game move on turn {currentState.BoardState.TurnNumber}");
+				Console.WriteLine($"Sending game move on turn {currentState.BoardState.TurnNumber}");
 				previousState = currentState;
-				currentState = await connection.InvokeAsync<GameState>(GameHubMethodNames.SEND_GAME_ACTION, actionRequest).ConfigureAwait(false);
+				var notification = await connection.InvokeAsync<GameNotification>(GameHubMethodNames.SEND_GAME_ACTION, actionRequest).ConfigureAwait(false);
+				currentState = notification.NewGameState;
 
 				// Check new BoardState
 				if(currentState.Stage != GameStage.GAME_OVER)
@@ -117,12 +118,12 @@ namespace Alinem.IntegrationTests
 			GameState player1NotificationGameState = null;
 			Semaphore player1NotificationSem = new Semaphore(0, 1);
 			// Setup gameStateUpdate message handler for player 1
-			firstPlayerConnection.On<GameState>(GameHubMethodNames.RECEIVE_GAME_STATE_UPDATE, (newGameState) =>
+			firstPlayerConnection.On<GameNotification>(GameHubMethodNames.RECEIVE_GAME_STATE_UPDATE, (notification) =>
 			{
 				if (!player1Notified)
 				{
 					// First game state update, Just store the state to compare it to state received by player2
-					player1NotificationGameState = newGameState;
+					player1NotificationGameState = notification.NewGameState;
 					player1Notified = true;
 					player1NotificationSem.Release();
 				}
@@ -170,14 +171,14 @@ namespace Alinem.IntegrationTests
 
 			var gameFinishedSem = new Semaphore(0, 1);
 			bool gameOver = false;
-			firstPlayerConnection.On<GameState>(GameHubMethodNames.RECEIVE_GAME_STATE_UPDATE, (newGameState) =>
+			firstPlayerConnection.On<GameNotification>(GameHubMethodNames.RECEIVE_GAME_STATE_UPDATE, (notification) =>
 			{
-				HandleGameStateUpdateNotificationAsync(firstPlayerConnection, newGameState).Wait();
+				HandleGameStateUpdateNotificationAsync(firstPlayerConnection, notification.NewGameState).Wait();
 			});
 
-			secondPlayerConnection.On<GameState>(GameHubMethodNames.RECEIVE_GAME_STATE_UPDATE, (newGameState) =>
+			secondPlayerConnection.On<GameNotification>(GameHubMethodNames.RECEIVE_GAME_STATE_UPDATE, (notification) =>
 			{
-				HandleGameStateUpdateNotificationAsync(secondPlayerConnection, newGameState);
+				HandleGameStateUpdateNotificationAsync(secondPlayerConnection, notification.NewGameState);
 			});
 
 			//Play first move
@@ -195,7 +196,7 @@ namespace Alinem.IntegrationTests
 				HubConnection currentPlayerConnection = currentTurn == PlayerTurn.ONE ? firstPlayerConnection : secondPlayerConnection;
 				currentPlayerConnection.Should().Be(connection, "Connection to handle game state must correspond to the current turn");
 
-				System.Console.WriteLine($"\nReceived game state update, turn number {newGameState.BoardState.TurnNumber}. Board state:\n{ToMatrixString(newGameState.BoardState.Board)}");
+				Console.WriteLine($"\nReceived game state update, turn number {newGameState.BoardState.TurnNumber}. Board state:\n{ToMatrixString(newGameState.BoardState.Board)}");
 				if (newGameState.BoardState.Winner != null)
 				{
 					System.Console.WriteLine($"Game Over! Winner is {newGameState.BoardState.Winner}");
@@ -278,12 +279,12 @@ namespace Alinem.IntegrationTests
 			GameState player1NotificationGameState = null;
 			Semaphore player1NotificationSem = new Semaphore(0, 1);
 			// Setup gameStateUpdate message handler for player 1
-			firstPlayerConnection.On<GameState>(GameHubMethodNames.RECEIVE_GAME_STATE_UPDATE, (newGameState) =>
+			firstPlayerConnection.On<GameNotification>(GameHubMethodNames.RECEIVE_GAME_STATE_UPDATE, (gameNotification) =>
 			{
 				if (!player1Notified)
 				{
 					// First game state update, Just store the state to compare it to state received by player2
-					player1NotificationGameState = newGameState;
+					player1NotificationGameState = gameNotification.NewGameState;
 					player1Notified = true;
 					player1NotificationSem.Release();
 				}
@@ -383,12 +384,12 @@ namespace Alinem.IntegrationTests
 			GameState player1NotificationGameState = null;
 			Semaphore player1NotificationSem = new Semaphore(0, 1);
 			// Setup gameStateUpdate message handler for player 1
-			firstPlayerConnection.On<GameState>(GameHubMethodNames.RECEIVE_GAME_STATE_UPDATE, (newGameState) =>
+			firstPlayerConnection.On<GameNotification>(GameHubMethodNames.RECEIVE_GAME_STATE_UPDATE, (notification) =>
 			{
 				if (!player1Notified)
 				{
 					// First game state update, Just store the state to compare it to state received by player2
-					player1NotificationGameState = newGameState;
+					player1NotificationGameState = notification.NewGameState;
 					player1Notified = true;
 					player1NotificationSem.Release();
 				}
