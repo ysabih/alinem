@@ -42,7 +42,7 @@ function GamePosition(props: Props) {
 
     return (
         <button className='btn btn-link' 
-                style={{borderStyle: 'solid', borderWidth: 2, borderColor: 'grey', backgroundColor: positionColor}} 
+                style={{borderStyle: 'solid', borderWidth: 2, borderColor: 'grey', borderRadius: 0, backgroundColor: positionColor}} 
                 disabled={!clickable} 
                 onClick={() => onPositionClicked(props)}>
         <svg height={size} width={size} visibility = {piece? 'visible' : 'hidden'} >

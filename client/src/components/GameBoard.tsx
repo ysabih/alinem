@@ -317,9 +317,9 @@ function GameHUD(props: StateProps){
     return(
     <div className="container mb-5 mt-4 h-100">
     <div className="row flex-nowrap h-100 justify-content-center">
-        <div className="col-sm-5 text-left p-2" style={{border: playerOneBorder, borderRadius: 8}}><span className="h4" style={{color: "red"}}>{playerNames[0]}</span></div>
+        <div className="col-sm-5 text-left p-2" style={{border: playerOneBorder, borderRadius: 0}}><span className="h4" style={{color: "red"}}>{playerNames[0]}</span></div>
         {/* <div className="col-sm text-center h4">{turnCount}</div> */}
-        <div className="col-sm-5 text-right p-2" style={{border: playerTwoBorder, borderRadius: 8}}><span className="h4" style={{color: "blue"}}>{playerNames[1]}</span></div>
+        <div className="col-sm-5 text-right p-2" style={{border: playerTwoBorder, borderRadius: 0}}><span className="h4" style={{color: "blue"}}>{playerNames[1]}</span></div>
     </div>
     </div>
     );
