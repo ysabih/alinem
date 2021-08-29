@@ -17,37 +17,9 @@ namespace Alinem.Logic
 		}
 
 		public GameAction CalculateComputerMove(GameBoardState gameState, int difficulty)
-		{	
-			if(gameState.GameMode == GameMode.PUT)
-			{
-				// Get All empty positions and choose a random one
-				List<Point> emptyPositions = GameLogicUtils.GetAllEmptyPositions(gameState.Board);
-				Point chosen = emptyPositions[rand.Next(0, emptyPositions.Count)];
-				return new PutPieceAction { Position = chosen };
-			}
-			else if(gameState.GameMode == GameMode.MOVE)
-			{
-				//get all pieces and empty positions
-				PlayerTurn currentTurn = gameState.CurrentTurn;
-				var board = gameState.Board;
-				List<Point> positions = GameLogicUtils.GetAllPlayerPositions(board, currentTurn);
-				List<Point> emptyPositions = GameLogicUtils.GetAllEmptyPositions(board);
-
-				var moves = new List<MovePieceAction>();
-				foreach(Point piece in positions)
-				{
-					foreach(Point emptyPosition in emptyPositions)
-					{
-						if (GameLogicUtils.AreAdjacent(piece, emptyPosition))
-							moves.Add(new MovePieceAction { From = piece, To = emptyPosition });
-					}
-				}
-				return moves[rand.Next(0, emptyPositions.Count)];
-			}
-			else
-			{
-				throw new ArgumentException("Unsupported game mode: " + gameState.GameMode);
-			}
+		{
+			List<GameAction> actions = GameLogicUtils.GetAllAvailableActions(gameState);
+			return actions[rand.Next(0, actions.Count)];
 		}
 	}
 }

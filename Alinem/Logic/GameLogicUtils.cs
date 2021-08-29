@@ -1,6 +1,7 @@
 ﻿using Alinem.Models;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Alinem.Logic
 {
@@ -62,6 +63,39 @@ namespace Alinem.Logic
 				}
 			}
 			return positions;
+		}
+
+		public static List<GameAction> GetAllAvailableActions(GameBoardState gameBoardState)
+		{
+			switch(gameBoardState.GameMode)
+			{
+				case GameMode.PUT:
+				{
+					List<Point> emptyPositions = GetAllEmptyPositions(gameBoardState.Board);
+					return emptyPositions.Select(position => (GameAction)new PutPieceAction { Position = position }).ToList();
+				}
+				case GameMode.MOVE:
+				{
+					PlayerTurn currentTurn = gameBoardState.CurrentTurn;
+					var board = gameBoardState.Board;
+					List<Point> positions = GetAllPlayerPositions(board, currentTurn);
+					List<Point> emptyPositions = GetAllEmptyPositions(board);
+
+					var moves = new List<GameAction>();
+					foreach (Point piece in positions)
+					{
+						foreach (Point emptyPosition in emptyPositions)
+						{
+							if (AreAdjacent(piece, emptyPosition))
+								moves.Add(new MovePieceAction { From = piece, To = emptyPosition });
+						}
+					}
+					return moves;
+				}
+				default:
+					throw new ArgumentException("Invalid game mode: " + gameBoardState.GameMode);
+			}
+			
 		}
 
 		public static bool AreAdjacent(Point first, Point second)
