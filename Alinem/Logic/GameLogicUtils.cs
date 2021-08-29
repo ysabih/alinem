@@ -68,7 +68,7 @@ namespace Alinem.Logic
 		{
 			int distX = Math.Abs(first.X - second.X);
 			if (distX > 1) return false;
-			int distY = Math.Abs(first.X - second.Y);
+			int distY = Math.Abs(first.Y - second.Y);
 			if (distY > 1) return false;
 			return distX + distY <= 2;
 		}
