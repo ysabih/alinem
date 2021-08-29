@@ -1,5 +1,5 @@
 import { HubConnection, HubConnectionBuilder, HubConnectionState, LogLevel } from '@microsoft/signalr'
-import { GameBoardState, GameState } from '../store/gameBoard/types';
+import { GameBoardState, GameNotification, GameState } from '../store/gameBoard/types';
 import { GameActionRequest, InitGameRequest, JoinPrivateGameRequest, QuitGameRequest, ResetGameRequest } from './types';
 
 const BacknedUrl = "http://localhost:5000";
@@ -15,7 +15,7 @@ const ServerMethodNames = {
     receiveOpponentQuitNotif: "ReceiveOpponentQuitNotif"
 }
 
-type GamestateUpdateHandler = (newState: GameState) => any;
+type GameNotificationHandler = (notification: GameNotification) => void;
 type OpponentQuitHandler = () => any;
 
 class BackendService {
@@ -69,7 +69,7 @@ class BackendService {
 
     async sendGameActionAsync(request: GameActionRequest) {
         let response = await this._connection.invoke(ServerMethodNames.sendGameAction, request);
-        return response as GameState;
+        return response as GameNotification;
     }
 
     async resetGameAsync(request: ResetGameRequest) {
@@ -77,13 +77,13 @@ class BackendService {
         return response as GameBoardState;
     }
 
-    registerGameStateUpdateHandler(handler: GamestateUpdateHandler) {
+    registerGameStateUpdateHandler(handler: GameNotificationHandler) {
         if(this._connection == null || !this.isConnected()){
             throw new Error("Can't register game state update handler if not connected");
         }
         this._connection.on(ServerMethodNames.receiveGameStateUpdate, (playload) => {
-            let newState = playload as GameState;
-            handler(newState);
+            let notification = playload as GameNotification;
+            handler(notification);
         });
     }
 

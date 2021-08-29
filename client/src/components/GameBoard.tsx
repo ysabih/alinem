@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { connect } from 'react-redux';
-import { GameBoardState, GameStage, GameState, GameType, PlayerTurn, PointState} from '../store/gameBoard/types';
+import { GameBoardState, GameNotification, GameStage, GameState, GameType, PlayerTurn, PointState} from '../store/gameBoard/types';
 import { ApplicationState} from '../store/index'
 import GamePosition from './GamePosition';
 import { UserState } from '../store/user/types';
@@ -105,8 +105,8 @@ async function initGameAsync(props: Props) {
         throw new Error("New state cannot be falsy, value: " + gameState);
     }
     console.debug("Initialized game on server, booard state: ", gameState);
-    backendService.registerGameStateUpdateHandler((newState: GameState) => {
-        props.applyGameState(newState);
+    backendService.registerGameStateUpdateHandler((notification: GameNotification) => {
+        props.applyGameState(notification.newGameState);
     })
     backendService.registerOpponentLeftNotificationHandler(() => {
         console.debug("Received notification: Opponent left the game")

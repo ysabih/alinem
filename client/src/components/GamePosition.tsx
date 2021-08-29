@@ -84,7 +84,7 @@ async function onPositionClicked(props: Props){
                     throw new Error("Expected non-falsy reponse from server, response: "+ response);
                 }
                 console.debug("Received new board state from server: ", response);
-                props.applyGameState(response);
+                props.applyGameState(response.newGameState);
 
             }, "Sending move...", props.setBlockingUI);
             break;
@@ -115,7 +115,7 @@ async function onPositionClicked(props: Props){
                         throw new Error("Expected non-falsy reponse from server, response: "+ response);
                     }
                     console.debug("Received new board state from server: ", response);
-                    props.applyGameState(response);
+                    props.applyGameState(response.newGameState);
                        
                 }, "Sending move...", props.setBlockingUI);
             }

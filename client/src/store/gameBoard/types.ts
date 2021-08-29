@@ -45,6 +45,11 @@ export interface GameBoardState {
     selected: Point | null
 }
 
+export interface GameNotification {
+    lastAction: GameAction,
+    newGameState: GameState
+}
+
 export interface Player {
     id: string,
     name: string,
