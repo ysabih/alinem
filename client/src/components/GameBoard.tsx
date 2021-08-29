@@ -1,13 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { connect } from 'react-redux';
-import { GameBoardState, GameNotification, GameStage, GameState, GameType, PlayerTurn, PointState} from '../store/gameBoard/types';
+import { GameBoardState, GameNotification, GameStage, GameState, GameType, MovePieceAction, PlayerTurn, PointState} from '../store/gameBoard/types';
 import { ApplicationState} from '../store/index'
 import GamePosition from './GamePosition';
 import { UserState } from '../store/user/types';
 import { backendService } from '../server/backendService'
 import LoadingSpinner from './LoadingSpinner';
-import { InitGameRequest, JoinPrivateGameRequest, QuitGameRequest, ResetGameRequest } from '../server/types';
-import { applyGameBoardState, applyGameState, resetGameState, setOpponentLeftState } from '../store/gameBoard/actions';
+import { GameAction, InitGameRequest, JoinPrivateGameRequest, QuitGameRequest, ResetGameRequest } from '../server/types';
+import { applyGameBoardState, applyGameState, resetGameState, selectPiece, setOpponentLeftState } from '../store/gameBoard/actions';
 import { BlockingUIState } from '../store/ui/types';
 import { setBlockingUI } from '../store/ui/actions';
 import { runBlockingAsync } from '../utils/componentHelpers';
@@ -25,6 +25,7 @@ interface DispatchProps {
     resetGameState: typeof resetGameState,
     applyGameBoardState: typeof applyGameBoardState,
     setBlockingUI: typeof setBlockingUI,
+    selectPiece: typeof selectPiece,
     setOpponentLeftState: typeof setOpponentLeftState
 }
 interface OwnProps {
@@ -41,6 +42,10 @@ function GameBoard(props: Props) {
     useEffect(() => {
         let loadingMessage = props.startMode === StartMode.Start? 'Initializing a new game...' : 'Connecting...';
         runBlockingAsync(initializeAsync, loadingMessage, props.setBlockingUI);
+
+        return () => {
+            console.debug("GameBoard is unmounted");
+        };
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
@@ -104,10 +109,22 @@ async function initGameAsync(props: Props) {
     if(!gameState) {
         throw new Error("New state cannot be falsy, value: " + gameState);
     }
-    console.debug("Initialized game on server, booard state: ", gameState);
-    backendService.registerGameStateUpdateHandler((notification: GameNotification) => {
-        props.applyGameState(notification.newGameState);
-    })
+    console.debug("Initialized game on server, State: ", gameState);
+    backendService.registerGameNotificationHandler((notification: GameNotification) => {
+        const action: GameAction | null = notification.lastAction;
+        let visualizableAction = false;
+        if(action) {
+            let movePiece = action as MovePieceAction;
+            if(movePiece && movePiece.from && movePiece.to){
+                visualizableAction = true;
+                props.selectPiece(movePiece.from);
+            }
+        }
+        let stateApplicationDelay = visualizableAction ? 750 : 0;
+        setTimeout(() => {
+            props.applyGameState(notification.newGameState); //TODO: handle cae where component is unmounted
+        }, stateApplicationDelay);
+    });
     backendService.registerOpponentLeftNotificationHandler(() => {
         console.debug("Received notification: Opponent left the game")
         props.setOpponentLeftState();
@@ -119,7 +136,7 @@ function quitCurrentGame(props: Props) {
     runBlockingAsync(async () => {
         await quitGameOnServerAsync(props);
         props.resetGameState();
-        backendService.clearGameStateUpdateHandler();
+        backendService.clearGameNotificationHandler();
     }, "Quitting game...", props.setBlockingUI);
 }
 
@@ -363,6 +380,7 @@ const mapDispatch : DispatchProps = {
     resetGameState: resetGameState,
     applyGameBoardState: applyGameBoardState,
     setOpponentLeftState: setOpponentLeftState,
+    selectPiece: selectPiece,
     setBlockingUI: setBlockingUI
 }
 export default connect<StateProps, DispatchProps, OwnProps, ApplicationState>(

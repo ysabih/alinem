@@ -77,7 +77,7 @@ class BackendService {
         return response as GameBoardState;
     }
 
-    registerGameStateUpdateHandler(handler: GameNotificationHandler) {
+    registerGameNotificationHandler(handler: GameNotificationHandler) {
         if(this._connection == null || !this.isConnected()){
             throw new Error("Can't register game state update handler if not connected");
         }
@@ -87,7 +87,7 @@ class BackendService {
         });
     }
 
-    clearGameStateUpdateHandler() {
+    clearGameNotificationHandler() {
         if(this._connection == null || !this.isConnected()){
             return;
         }

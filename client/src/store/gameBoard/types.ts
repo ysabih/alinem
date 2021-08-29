@@ -46,7 +46,7 @@ export interface GameBoardState {
 }
 
 export interface GameNotification {
-    lastAction: GameAction,
+    lastAction: GameAction | null,
     newGameState: GameState
 }
 

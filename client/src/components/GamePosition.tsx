@@ -33,35 +33,58 @@ function GamePosition(props: Props) {
     if(props.game.boardState == null) {
         throw new Error("Board state must not be null while game stage is "+props.game.stage);
     }
-    let state: PointState = props.game.boardState.board[props.position.y][props.position.x];
-    let playable: boolean = props.playable && isPlayable(props.game.boardState, props.position);
-    const color = getPositionColor(state, playable);
+    let piece: PointState = props.game.boardState.board[props.position.y][props.position.x];
+    let playable: boolean = isPlayable(props.game.boardState, props.position);
+    let clickable: boolean = props.playable && playable;
+    
+    let positionColor: string = getPositionColor(props, clickable, playable, piece == null);
+    let pieceColor: string = getPieceColor(piece);
 
     return (
         <button className='btn btn-link' 
-                style={{borderRadius: '50%', borderStyle: 'solid'}} 
-                disabled={!playable} 
+                style={{borderStyle: 'solid', borderWidth: 2, borderColor: 'grey', backgroundColor: positionColor}} 
+                disabled={!clickable} 
                 onClick={() => onPositionClicked(props)}>
-        <svg height={size} width={size}>
-            <circle cx={size/2} cy={size/2} r={size*2/5} stroke="black" strokeWidth={3} fill={color}/>
-        </svg>
+        <svg height={size} width={size} visibility = {piece? 'visible' : 'hidden'} >
+            <circle cx={size/2} cy={size/2} r={size*2/5} stroke="black" strokeWidth={3} fill={pieceColor}/>
+        </svg>          
         </button>
     );
 }
 
 enum PositionColor {
     Empty = 'transparent',
-    EmptyPlayable = '#d2ffb8',
-    PlayerOne = 'red',
-    PlayerTwo = 'blue'
+    Playable = '#d2ffb8',
+    Selected = '#9ee7ff'
 }
 
-function getPositionColor(point: PointState, playable: boolean): PositionColor{
-    if(point == null) {
-        return playable ? PositionColor.EmptyPlayable : PositionColor.Empty;
+enum PieceColor {
+    Player1 = 'red',
+    Player2 = 'blue',
+}
+
+function getPositionColor(props: Props, clickable: boolean, playable: boolean, empty: boolean): string {
+    switch(props.game.boardState?.gameMode) {
+        case GameMode.PUT: {
+            // make it a playable if empty and clickable
+            return clickable ? PositionColor.Playable : PositionColor.Empty
+        }
+        case GameMode.MOVE: {
+            let selectedPosition = props.game.boardState.selected;
+            let selected: boolean = selectedPosition != null 
+                                    && selectedPosition.x === props.position.x && selectedPosition.y === props.position.y;
+            if(selected) return PositionColor.Selected;
+            return playable && empty? PositionColor.Playable : PositionColor.Empty;
+        }
+        default: {
+            return '';
+        }
     }
-    if(point === PlayerTurn.ONE) return PositionColor.PlayerOne;
-    return PositionColor.PlayerTwo;
+}
+
+function getPieceColor(piece: PointState): string {
+    if(piece == null) return '';
+    return piece === PlayerTurn.ONE ? PieceColor.Player1 : PieceColor.Player2;
 }
 
 async function onPositionClicked(props: Props){
