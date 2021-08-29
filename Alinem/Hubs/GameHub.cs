@@ -155,7 +155,7 @@ namespace Alinem.Hubs
 			}
 			if (!gameExists || !validUserId)
 			{
-				throw new ArgumentException($"Game with id {request.GameId} not found");
+				return Task.CompletedTask;
 			}
 
 			return HandlePlayerLeftGameAsync(userId, gameState);
