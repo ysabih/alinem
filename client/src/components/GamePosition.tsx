@@ -7,7 +7,7 @@ import { addPiece, applyGameState, movePiece, selectPiece } from "../store/gameB
 import { GameMode, GameState, PlayerTurn, Point, PointState } from "../store/gameBoard/types";
 import { setBlockingUI } from "../store/ui/actions";
 import { UserState } from "../store/user/types";
-import { runBlockingAsync } from "../utils/componentHelpers";
+import { handleGameActionNotification, runBlockingAsync } from "../utils/componentHelpers";
 import { isPlayable, getPositionState } from "../utils/gameRulesHelpers";
 
 interface StateProps {
@@ -107,7 +107,7 @@ async function onPositionClicked(props: Props){
                     throw new Error("Expected non-falsy reponse from server, response: "+ response);
                 }
                 console.debug("Received new board state from server: ", response);
-                props.applyGameState(response.newGameState);
+                handleGameActionNotification(response, props.selectPiece, props.applyGameState);
 
             }, "Sending move...", props.setBlockingUI);
             break;
@@ -138,7 +138,7 @@ async function onPositionClicked(props: Props){
                         throw new Error("Expected non-falsy reponse from server, response: "+ response);
                     }
                     console.debug("Received new board state from server: ", response);
-                    props.applyGameState(response.newGameState);
+                    handleGameActionNotification(response, props.selectPiece, props.applyGameState);
                        
                 }, "Sending move...", props.setBlockingUI);
             }

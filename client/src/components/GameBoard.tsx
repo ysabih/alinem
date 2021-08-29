@@ -1,16 +1,16 @@
 import React, { useEffect, useState } from 'react';
 import { connect } from 'react-redux';
-import { GameBoardState, GameNotification, GameStage, GameState, GameType, MovePieceAction, PlayerTurn, PointState} from '../store/gameBoard/types';
+import { GameBoardState, GameNotification, GameStage, GameState, GameType, PlayerTurn, PointState} from '../store/gameBoard/types';
 import { ApplicationState} from '../store/index'
 import GamePosition from './GamePosition';
 import { UserState } from '../store/user/types';
 import { backendService } from '../server/backendService'
 import LoadingSpinner from './LoadingSpinner';
-import { GameAction, InitGameRequest, JoinPrivateGameRequest, QuitGameRequest, ResetGameRequest } from '../server/types';
+import { InitGameRequest, JoinPrivateGameRequest, QuitGameRequest, ResetGameRequest } from '../server/types';
 import { applyGameBoardState, applyGameState, resetGameState, selectPiece, setOpponentLeftState } from '../store/gameBoard/actions';
 import { BlockingUIState } from '../store/ui/types';
 import { setBlockingUI } from '../store/ui/actions';
-import { runBlockingAsync } from '../utils/componentHelpers';
+import { handleGameActionNotification, runBlockingAsync } from '../utils/componentHelpers';
 import { Link } from 'react-router-dom';
 import { getCurrentPlayerId } from '../utils/gameRulesHelpers';
 import { StartMode } from './types';
@@ -111,19 +111,7 @@ async function initGameAsync(props: Props) {
     }
     console.debug("Initialized game on server, State: ", gameState);
     backendService.registerGameNotificationHandler((notification: GameNotification) => {
-        const action: GameAction | null = notification.lastAction;
-        let visualizableAction = false;
-        if(action) {
-            let movePiece = action as MovePieceAction;
-            if(movePiece && movePiece.from && movePiece.to){
-                visualizableAction = true;
-                props.selectPiece(movePiece.from);
-            }
-        }
-        let stateApplicationDelay = visualizableAction ? 750 : 0;
-        setTimeout(() => {
-            props.applyGameState(notification.newGameState); //TODO: handle cae where component is unmounted
-        }, stateApplicationDelay);
+        handleGameActionNotification(notification, props.selectPiece, props.applyGameState);
     });
     backendService.registerOpponentLeftNotificationHandler(() => {
         console.debug("Received notification: Opponent left the game")
