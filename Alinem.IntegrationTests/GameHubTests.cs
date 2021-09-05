@@ -30,7 +30,7 @@ namespace Alinem.IntegrationTests
 			};
 			// Needed to test playing the game
 			var gameAi = new RandomActionGameAI();
-			int difficulty = 2; // Totally random
+			GameDifficulty difficulty = GameDifficulty.MEDIUM; // Totally random
 			int maxActionCount = 5;	
 			int actionCount = 0;
 

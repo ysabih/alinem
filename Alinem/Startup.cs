@@ -57,7 +57,7 @@ namespace Alinem
 			// Business services
 			services.AddSingleton<IGameLogic>(new GameLogic());
 			services.AddSingleton<IServerState>(new ServerState());
-			services.AddSingleton<IGameAI>(new RandomActionGameAI());
+			services.AddSingleton<IGameAI, MinimaxGameAI>();
 		}
 	}
 }

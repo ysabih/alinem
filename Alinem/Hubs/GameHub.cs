@@ -86,7 +86,7 @@ namespace Alinem.Hubs
 					return new GameNotification { NewGameState = newState};
 				}
 
-				int difficulty = serverState.DefaultGameDifficulty;
+				GameDifficulty difficulty = serverState.DefaultGameDifficulty;
 				// Get computer's move and return new state to player
 				GameAction computerAction = gameAI.CalculateComputerMove(newState.BoardState, difficulty);
 				GameState afterComputerMove = gameLogic.ApplyAction(newState, computerAction);

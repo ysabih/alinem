@@ -14,7 +14,7 @@ namespace Alinem.Logic
 		bool RemoveGameIfExists(string gameId);
 		void TryRemovePlayer(string playerId);
 
-		public int DefaultGameDifficulty { get; }
+		public GameDifficulty DefaultGameDifficulty { get; }
 		public Player ComputerPlayer { get; }
 	}
 }

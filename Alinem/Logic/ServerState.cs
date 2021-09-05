@@ -31,8 +31,7 @@ namespace Alinem.Logic
 		private static HashSet<string> OpenGames = new HashSet<string>();
 		private static object OpenGamesLock = new object();
 
-		private static readonly int DefaultGameDifficulty = 3;
-		int IServerState.DefaultGameDifficulty => DefaultGameDifficulty;
+		GameDifficulty IServerState.DefaultGameDifficulty => GameDifficulty.MEDIUM;
 
 		Player IServerState.ComputerPlayer => ComputerPlayer;
 

@@ -72,4 +72,11 @@ namespace Alinem.Models
 		VS_RANDOM_PLAYER,
 		VS_FRIEND
 	}
+
+	public enum GameDifficulty
+	{
+		EASY,
+		MEDIUM,
+		HARD
+	}
 }

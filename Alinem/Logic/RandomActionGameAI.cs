@@ -16,7 +16,7 @@ namespace Alinem.Logic
 			rand = new Random();
 		}
 
-		public GameAction CalculateComputerMove(GameBoardState gameState, int difficulty)
+		public GameAction CalculateComputerMove(GameBoardState gameState, GameDifficulty difficulty)
 		{
 			List<GameAction> actions = GameLogicUtils.GetAllAvailableActions(gameState);
 			return actions[rand.Next(0, actions.Count)];

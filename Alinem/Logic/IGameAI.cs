@@ -4,6 +4,6 @@ namespace Alinem.Logic
 {
 	public interface IGameAI
 	{
-		GameAction CalculateComputerMove(GameBoardState gameState, int difficulty);
+		GameAction CalculateComputerMove(GameBoardState gameState, GameDifficulty difficulty);
 	}
 }

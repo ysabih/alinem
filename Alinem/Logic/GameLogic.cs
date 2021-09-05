@@ -9,18 +9,34 @@ namespace Alinem.Logic
 		// No validation needed here
 		public GameState ApplyAction([DisallowNull] GameState currentState, [DisallowNull] GameAction action)
 		{
-			PlayerTurn currentTurn = currentState.BoardState.CurrentTurn;
-			int currentTurnNumber = currentState.BoardState.TurnNumber;
-			PlayerTurn?[,] currentBoard = currentState.BoardState.Board;
+			GameBoardState newBoardState = ApplyAction(currentState.BoardState, action);
+
+			return new GameState
+			{
+				Id = currentState.Id,
+				Type = currentState.Type,
+				StartTimeUtc = currentState.StartTimeUtc,
+				Player1 = currentState.Player1,
+				Player2 = currentState.Player2,
+				Stage = newBoardState.Winner == null ? GameStage.PLAYING : GameStage.GAME_OVER,
+				BoardState = newBoardState
+			};
+		}
+
+		public GameBoardState ApplyAction(GameBoardState boardState, GameAction action)
+		{
+			PlayerTurn currentTurn = boardState.CurrentTurn;
+			int currentTurnNumber = boardState.TurnNumber;
+			PlayerTurn?[,] currentBoard = boardState.Board;
 
 			PlayerTurn?[,] newBoard = new PlayerTurn?[currentBoard.GetLength(0), currentBoard.GetLength(1)];
 			Array.Copy(currentBoard, newBoard, currentBoard.Length);
 
-			if(action is PutPieceAction putPieceAction)
+			if (action is PutPieceAction putPieceAction)
 			{
 				newBoard[putPieceAction.Position.Y, putPieceAction.Position.X] = currentTurn;
 			}
-			else if(action is MovePieceAction movePieceAction)
+			else if (action is MovePieceAction movePieceAction)
 			{
 				newBoard[movePieceAction.To.Y, movePieceAction.To.X] = currentTurn;
 				newBoard[movePieceAction.From.Y, movePieceAction.From.X] = null;
@@ -31,24 +47,13 @@ namespace Alinem.Logic
 			if (GameLogicUtils.IsWinner(newBoard, currentTurn))
 				winner = currentTurn;
 
-			GameBoardState newBoardState = new GameBoardState
+			return new GameBoardState
 			{
 				TurnNumber = currentTurnNumber + 1,
 				Board = newBoard,
 				CurrentTurn = GameLogicUtils.Next(currentTurn),
 				GameMode = currentTurnNumber < 6 ? GameMode.PUT : GameMode.MOVE,
 				Winner = winner
-			};
-
-			return new GameState
-			{
-				Id = currentState.Id,
-				Type = currentState.Type,
-				StartTimeUtc = currentState.StartTimeUtc,
-				Player1 = currentState.Player1,
-				Player2 = currentState.Player2,
-				Stage = winner == null ? GameStage.PLAYING : GameStage.GAME_OVER,
-				BoardState = newBoardState
 			};
 		}
 
@@ -83,8 +88,8 @@ namespace Alinem.Logic
 				Player1 = gameState.Player1,
 				Player2 = newPlayer,
 				Stage = GameStage.PLAYING,
-				BoardState = GameLogicUtils.InitializeGameBoard(GameLogicUtils.GetRandomTurn())
+				BoardState = GameLogicUtils.InitializeGameBoard(PlayerTurn.TWO)
 			};
 		}
-	}
+    }
 }
