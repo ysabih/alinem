@@ -1,8 +1,21 @@
-import { UserActionType, SetUserNameAction } from './types';
+import { UserPreferences } from './types';
 
-export function setName(newName: string) : SetUserNameAction {
+export enum UserActionType {
+    SET_PREFERENCES = "user/setPreferences"
+}
+
+export interface UserAction {
+    type: UserActionType,
+}
+
+export interface SetPreferencesAction extends UserAction{
+    type: UserActionType.SET_PREFERENCES,
+    newPrefs: UserPreferences
+}
+
+export function SetUserPreferences(newPrefs: UserPreferences): SetPreferencesAction {
     return {
-        type: UserActionType.SET_NAME,
-        newName: newName
+        type: UserActionType.SET_PREFERENCES,
+        newPrefs: newPrefs
     }
 }

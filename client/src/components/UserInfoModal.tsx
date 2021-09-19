@@ -1,14 +1,14 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { connect } from 'react-redux';
-import { ApplicationState} from '../store/index'
-import { setName } from '../store/user/actions';
+import { ApplicationState} from '../store/index';
+import { SetUserPreferences } from '../store/user/actions';
 import { UserState } from '../store/user/types';
 
 interface StateProps {
     user: UserState
 }
 interface DispatchProps {
-    setName: typeof setName
+    setUserPreferences: typeof SetUserPreferences
 }
 interface OwnProps {
     isOpen: boolean
@@ -42,7 +42,7 @@ function mapState(state: ApplicationState) : StateProps {
     };
 }
 const mapDispatch : DispatchProps = {
-    setName: setName
+    setUserPreferences: SetUserPreferences
 }
 
 export default connect<StateProps, DispatchProps, OwnProps, ApplicationState>(

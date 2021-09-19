@@ -1,16 +1,12 @@
-export enum UserActionType {
-    SET_NAME = "user/setName"
-}
-
-export interface UserAction {
-    type: UserActionType
-}
-
-export interface SetUserNameAction extends UserAction{
-    readonly newName: string
-}
+import { GameDifficulty } from "../gameBoard/types";
 
 export interface UserState {
-    name: string
-    isNameSet: boolean
+    preferencesSet: boolean,
+    userPreferences: UserPreferences
+}
+
+export interface UserPreferences {
+    userName: string,
+    gameDifficulty: GameDifficulty,
+    showPrefsModalBeforeGame: boolean
 }

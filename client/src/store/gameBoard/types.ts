@@ -31,9 +31,13 @@ export interface GameState {
     type: GameType,
     startTimtUtc: Date,
     stage: GameStage,
+    // Is null when still waiting for opponent
+    player2: Player | null, 
     player1: Player,
-    player2: Player | null, /*Can be null when still waiting for opponent*/
-    boardState: GameBoardState | null, /*Can be null when not playing yet (e.g. when waiting for opponent)*/
+    // Is null when not playing yet (e.g. when waiting for opponent)
+    boardState: GameBoardState | null, 
+     // Actually used only in games vs computer, configured a user preference and sent to server at game initialization
+    difficulty: GameDifficulty,
 }
 
 export interface GameBoardState {
@@ -68,6 +72,12 @@ export enum GameStage {
 	PLAYING = "PLAYING",
 	GAME_OVER = "GAME_OVER",
     OPPONENT_LEFT = "OPPONENT_LEFT",
+}
+
+export enum GameDifficulty {
+    EASY = "EASY",
+    MEDIUM = "MEDIUM",
+    HARD = "HARD"
 }
 
 export interface GameAction {

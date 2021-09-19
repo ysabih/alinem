@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { connect } from 'react-redux';
-import { GameBoardState, GameNotification, GameStage, GameState, GameType, PlayerTurn, PointState} from '../store/gameBoard/types';
+import { GameBoardState, GameNotification, GameStage, GameState, GameType, PlayerTurn, PlayerType, PointState} from '../store/gameBoard/types';
 import { ApplicationState} from '../store/index'
 import GamePosition from './GamePosition';
 import { UserState } from '../store/user/types';
@@ -86,9 +86,10 @@ async function initGameAsync(props: Props) {
             }
             let initRequest: InitGameRequest = {
                 gameType: props.gameType,
-                userName: props.user.name,
+                userName: props.user.userPreferences.userName,
                 // TODO: Make this configurable
-                userTurn: PlayerTurn.ONE
+                userTurn: PlayerTurn.ONE,
+                difficulty: props.user.userPreferences.gameDifficulty
             }
             gameState = await backendService.initGameAsync(initRequest);
             
@@ -100,7 +101,7 @@ async function initGameAsync(props: Props) {
             }
             let joinRequest: JoinPrivateGameRequest = {
                 gameId: props.gameId,
-                userName: props.user.name
+                userName: props.user.userPreferences.userName
             }
             gameState = await backendService.joinPrivateGameAsync(joinRequest);
         }
@@ -321,11 +322,20 @@ function SmallLoadingSpinner() {
     );
 }
 
-function getPlayerDisplayNames(props: StateProps) : (string|undefined)[] {
-    return  [
-        props.game.player1?.name,
-        props.game.player2?.name
-    ];
+function getPlayerDisplayNames(props: StateProps) : string[] {
+    const players = [props.game.player1, props.game.player2];
+    let result: string[] = [];
+    players.forEach((player) => {
+        if(!player){
+            result.push("<null>");
+        }
+        else if(player.type === PlayerType.COMPUTER) {
+            result.push(`Bot (${props.game.difficulty})`);
+        }
+        else result.push(player.name);
+
+    });
+    return result;
 }
 
 function Board(props: {board: PointState[][], playable: boolean}) {

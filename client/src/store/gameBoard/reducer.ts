@@ -1,6 +1,6 @@
 import { isWinner, checkValidMove, checkValidPut, getPositionState } from '../../utils/gameRulesHelpers';
 import {PutPieceAction, GameAction, GameActionType, 
-        GameBoardState, GameMode, MovePieceAction, PlayerTurn, PointState, SelectPieceAction, ApplyGameStateAction, GameState, PlayerType, ApplyBoardStateAction, GameStage, GameType} from './types';
+        GameBoardState, GameMode, MovePieceAction, PlayerTurn, PointState, SelectPieceAction, ApplyGameStateAction, GameState, PlayerType, ApplyBoardStateAction, GameStage, GameType, GameDifficulty} from './types';
 
 const BOARD_ROW_LENGTH = 3;
 const unintializedState: GameState = {
@@ -15,6 +15,7 @@ const unintializedState: GameState = {
     },
     player2: null,
     boardState: null,
+    difficulty: GameDifficulty.EASY, // Arbitrary
 }
 
 export function gameReducer(state: GameState = unintializedState, action: GameAction): GameState {

@@ -1,9 +1,10 @@
-import { GameType, PlayerTurn, Point } from "../store/gameBoard/types";
+import { GameDifficulty, GameType, PlayerTurn, Point } from "../store/gameBoard/types";
 
 export interface InitGameRequest {
     userName: string,
     userTurn: PlayerTurn,
     gameType: GameType
+    difficulty: GameDifficulty | null,
 }
 
 export interface JoinPrivateGameRequest {
