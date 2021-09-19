@@ -7,6 +7,7 @@ namespace Alinem.Models
 		public string UserName { get; set; }
 		public PlayerTurn UserTurn { get; set; }
 		public GameType GameType { get; set; }
+		public GameDifficulty? Difficulty { get; set; }
 	}
 
 	public class JoinPrivateGameRequest

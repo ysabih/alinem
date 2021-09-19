@@ -19,7 +19,8 @@ namespace Alinem.Logic
 				Player1 = currentState.Player1,
 				Player2 = currentState.Player2,
 				Stage = newBoardState.Winner == null ? GameStage.PLAYING : GameStage.GAME_OVER,
-				BoardState = newBoardState
+				BoardState = newBoardState,
+				Difficulty = currentState.Difficulty
 			};
 		}
 

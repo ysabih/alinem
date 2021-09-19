@@ -36,7 +36,7 @@ namespace Alinem.Hubs
 			{
 				case GameType.VS_COMPUTER:
 				{
-					return InitializeGameVsComputer(player, request.UserTurn);
+					return InitializeGameVsComputer(player, request);
 				}
 				case GameType.VS_RANDOM_PLAYER:
 				{
@@ -85,10 +85,8 @@ namespace Alinem.Hubs
 				{
 					return new GameNotification { NewGameState = newState};
 				}
-
-				GameDifficulty difficulty = serverState.DefaultGameDifficulty;
 				// Get computer's move and return new state to player
-				GameAction computerAction = gameAI.CalculateComputerMove(newState.BoardState, difficulty);
+				GameAction computerAction = gameAI.CalculateComputerMove(newState.BoardState, newState.Difficulty);
 				GameState afterComputerMove = gameLogic.ApplyAction(newState, computerAction);
 
 				serverState.UpdateGameState(afterComputerMove);
@@ -189,7 +187,7 @@ namespace Alinem.Hubs
 			serverState.RemoveGameIfExists(gameState.Id);
 		}
 
-		private GameState InitializeGameVsComputer(Player player, PlayerTurn playerTurn)
+		private GameState InitializeGameVsComputer(Player player, InitGameRequest request)
 		{
 			var gameState = new GameState
 			{
@@ -199,7 +197,8 @@ namespace Alinem.Hubs
 				Stage = GameStage.PLAYING,
 				Player1 = player,
 				Player2 = serverState.ComputerPlayer,
-				BoardState = GameLogicUtils.InitializeGameBoard(playerTurn)
+				BoardState = GameLogicUtils.InitializeGameBoard(request.UserTurn),
+				Difficulty = request.Difficulty ?? serverState.DefaultGameDifficulty
 			};
 			serverState.AddNewGame(gameState, player);
 			return gameState;
