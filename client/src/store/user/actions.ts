@@ -13,7 +13,7 @@ export interface SetPreferencesAction extends UserAction{
     newPrefs: UserPreferences
 }
 
-export function SetUserPreferences(newPrefs: UserPreferences): SetPreferencesAction {
+export function setUserPreferences(newPrefs: UserPreferences): SetPreferencesAction {
     return {
         type: UserActionType.SET_PREFERENCES,
         newPrefs: newPrefs

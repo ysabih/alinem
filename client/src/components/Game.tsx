@@ -1,7 +1,6 @@
 import React from 'react';
 import { useLocation, useParams } from 'react-router-dom';
 import { GameType } from '../store/gameBoard/types';
-import AppBar from './AppBar';
 import GameBoard from './GameBoard';
 import { StartMode } from './types';
 
@@ -44,12 +43,9 @@ const Game = () => {
     }
 
     return (
-        <>
-        <AppBar />
         <div style={{marginTop: '70px', marginLeft: '12px', marginRight: '12px'}}>
             <GameBoard startMode={startMode} gameType={gameType} gameId={gameId}/>
         </div>
-        </>
     );
 };
 

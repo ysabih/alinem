@@ -1,12 +1,10 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { GameType } from '../store/gameBoard/types';
-import AppBar from './AppBar';
 
-const Public = () => {
+const Home = () => {
     return (
         <>
-        <AppBar />
         <div className="container-fluid" style={{marginTop: '120px'}}>
             <h2 className="text-center h3">It's Tic Tac Toe 2.0</h2>
             <div className="row justify-content-center mt-5">
@@ -19,4 +17,4 @@ const Public = () => {
     );
 };
 
-export default Public;
+export default Home;
