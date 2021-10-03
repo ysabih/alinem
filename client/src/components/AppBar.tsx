@@ -43,7 +43,8 @@ function AppBar(props: Props) {
             <span className="h3">Alinem</span>
         </div>
 
-        <div className="flex-grow-1 d-flex flex-row justify-content-end">
+        <div className="flex-grow-1 d-flex flex-row justify-content-end align-items-center">
+            <span style={{fontWeight: 'bold'}} className="mr-2" >{props.userPrefs.userName}</span>
             <button id="openPrefs" type="button" className="btn btn-link" data-toggle="modal" data-target="#prefsModal">
                 <FontAwesomeIcon icon={faCog} />
             </button>
