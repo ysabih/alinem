@@ -112,7 +112,7 @@ async function initGameAsync(props: Props) {
     }
     console.debug("Initialized game on server, State: ", gameState);
     backendService.registerGameNotificationHandler((notification: GameNotification) => {
-        handleGameActionNotification(notification, props.selectPiece, props.applyGameState);
+        handleGameActionNotification(notification, props.selectPiece, props.applyGameState, true);
     });
     backendService.registerOpponentLeftNotificationHandler(() => {
         console.debug("Received notification: Opponent left the game")

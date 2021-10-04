@@ -13,14 +13,16 @@ export function areEquivalent(s1: GameBoardState, s2: GameBoardState): boolean {
     return JSON.stringify(s1) === JSON.stringify(s2);
 }
 
-export function handleGameActionNotification(notification: GameNotification, selectPieceFunc: typeof selectPiece, applyGameStateFunc: typeof applyGameState) {
+export function handleGameActionNotification(notification: GameNotification, selectPieceFunc: typeof selectPiece, applyGameStateFunc: typeof applyGameState, opponentAction: boolean) {
     const action: GameAction | null = notification.lastAction;
         let visualizableAction = false;
         if(action) {
             let movePiece = action as MovePieceAction;
             if(movePiece && movePiece.from && movePiece.to){
-                visualizableAction = true;
-                selectPieceFunc(movePiece.from);
+                visualizableAction = opponentAction;
+                if(opponentAction){
+                    selectPieceFunc(movePiece.from);
+                }
             }
         }
         let stateApplicationDelay = visualizableAction ? 750 : 250;

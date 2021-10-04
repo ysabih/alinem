@@ -82,7 +82,7 @@ export function gameReducer(state: GameState = unintializedState, action: GameAc
             }
             let positionState = getPositionState(state.boardState.board, selectAction.position);
             if(positionState == null){
-                throw new Error("Cannot select an empty position");
+                throw new Error(`Cannot select an empty position (${selectAction.position.x}, ${selectAction.position.y})`);
             }
             if(positionState !== state.boardState.currentTurn){
                 throw new Error(`Cannot select a ${positionState} piece on ${state.boardState.currentTurn}'s turn`);

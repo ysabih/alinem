@@ -107,7 +107,7 @@ async function onPositionClicked(props: Props){
                     throw new Error("Expected non-falsy reponse from server, response: "+ response);
                 }
                 console.debug("Received new board state from server: ", response);
-                handleGameActionNotification(response, props.selectPiece, props.applyGameState);
+                handleGameActionNotification(response, props.selectPiece, props.applyGameState, false);
 
             }, "Sending move...", props.setBlockingUI);
             break;
@@ -138,7 +138,7 @@ async function onPositionClicked(props: Props){
                         throw new Error("Expected non-falsy reponse from server, response: "+ response);
                     }
                     console.debug("Received new board state from server: ", response);
-                    handleGameActionNotification(response, props.selectPiece, props.applyGameState);
+                    handleGameActionNotification(response, props.selectPiece, props.applyGameState, false);
                        
                 }, "Sending move...", props.setBlockingUI);
             }
