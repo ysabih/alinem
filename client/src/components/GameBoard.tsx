@@ -6,7 +6,7 @@ import GamePosition from './GamePosition';
 import { UserState } from '../store/user/types';
 import { backendService } from '../server/backendService'
 import LoadingSpinner from './LoadingSpinner';
-import { InitGameRequest, JoinPrivateGameRequest, QuitGameRequest, ResetGameRequest } from '../server/types';
+import { InitGameRequest, JoinGameResponse, JoinGameResponseType, JoinPrivateGameRequest, QuitGameRequest, ResetGameRequest } from '../server/types';
 import { applyGameBoardState, applyGameState, resetGameState, selectPiece, setOpponentLeftState } from '../store/gameBoard/actions';
 import { BlockingUIState } from '../store/ui/types';
 import { setBlockingUI } from '../store/ui/actions';
@@ -37,7 +37,7 @@ type Props = StateProps & DispatchProps & OwnProps;
 
 function GameBoard(props: Props) {
     const [initialized, setInitialized] = useState(false);
-
+    const [initGameResponseType, setInitGameResponseType] = useState(JoinGameResponseType.SUCCESS);
     // Init game on server
     useEffect(() => {
         let loadingMessage = props.startMode === StartMode.Start? 'Initializing a new game...' : 'Connecting...';
@@ -53,7 +53,7 @@ function GameBoard(props: Props) {
         if(initialized){
            return 
         }
-        await initGameAsync(props);
+        setInitGameResponseType(await initGameAsync(props));
         setInitialized(true);
     }
 
@@ -61,7 +61,8 @@ function GameBoard(props: Props) {
         <>
             { props.blockingUI.blocking ? <LoadingSpinner message={props.blockingUI.blockingMessage} /> : <></> }
             <div style={{opacity: props.blockingUI.blocking? 0.2 : 1}}>
-                <GameBoardCore {...props}/>
+                {initGameResponseType === JoinGameResponseType.SUCCESS ? <GameBoardCore {...props}/> : <></>}
+                {initGameResponseType === JoinGameResponseType.GAME_NOT_FOUND ? <GameNotFound/> : <></>}
                 <div className='container' style={{marginTop: 24}}>
                     <div className='row justify-content-center'>
                         <ResetGameVsComputerButton {...props} />
@@ -74,10 +75,11 @@ function GameBoard(props: Props) {
     );
 }
 
-async function initGameAsync(props: Props) {
+async function initGameAsync(props: Props) : Promise<JoinGameResponseType> {
     await backendService.connectAsync();
 
     let gameState: GameState;
+    let responseType: JoinGameResponseType;
     // initiate game on server first
     switch (props.startMode) {
         case StartMode.Start: {
@@ -92,7 +94,7 @@ async function initGameAsync(props: Props) {
                 difficulty: props.user.userPreferences.gameDifficulty
             }
             gameState = await backendService.initGameAsync(initRequest);
-            
+            responseType = JoinGameResponseType.SUCCESS;
             break;
         }
         case StartMode.Join: {
@@ -103,8 +105,25 @@ async function initGameAsync(props: Props) {
                 gameId: props.gameId,
                 userName: props.user.userPreferences.userName
             }
-            gameState = await backendService.joinPrivateGameAsync(joinRequest);
+            const response: JoinGameResponse = await backendService.joinPrivateGameAsync(joinRequest);
+            switch(response.state){
+                case JoinGameResponseType.SUCCESS:
+                case JoinGameResponseType.GAME_NOT_FOUND:
+                {
+                    gameState = response.gameState;
+                    responseType = response.state;
+                    break;
+                }
+                default:
+                {
+                    throw new Error(`Unexpected response type '${response.state}'`)
+                }
+            }
         }
+    }
+
+    if(responseType === JoinGameResponseType.GAME_NOT_FOUND) {
+        return responseType; // Nothing to set up if game is not found
     }
 
     if(!gameState) {
@@ -119,6 +138,7 @@ async function initGameAsync(props: Props) {
         props.setOpponentLeftState();
     });
     props.applyGameState(gameState);
+    return responseType;
 }
 
 function quitCurrentGame(props: Props) {
@@ -201,6 +221,25 @@ function ReplayButton(props: Props) {
         style={{display: canReinitializeGame(props) ? 'inline' : 'none'}} 
         onClick={async () => await initGameAsync(props)}>New game</button>
     );
+}
+
+function GameNotFound(){
+    return (
+    <>
+    <div className='row'>
+        <div className="col-md-8 mx-auto">
+            <h4 className="text-danger">Game not found</h4>
+            <h5>Please check the following:</h5>
+            <ul>
+                <li>The link is correct</li>
+                <li>The player who sent you the link didn't quit the game</li>
+            </ul>
+        </div>
+    </div>
+    <div className='row justify-content-center' style={{marginTop: 48}}>
+        <Link className='col col-auto btn btn-lg btn-primary' to=''>Home page</Link>
+    </div>
+    </>);
 }
 
 function GameBoardCore(props: Props) {

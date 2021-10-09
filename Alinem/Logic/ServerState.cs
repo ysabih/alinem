@@ -58,7 +58,7 @@ namespace Alinem.Logic
 			GameState gameState;
 			if (!Games.TryGetValue(gameId, out gameState))
 			{
-				throw new ArgumentException($"There is no current game with id {gameId}");
+				throw new GameNotFoundException(gameId);
 			}
 			return gameState;
 		}

@@ -52,9 +52,8 @@ namespace Alinem.Hubs
 		}
 
 		[HubMethodName(GameHubMethodNames.JOIN_PRIVATE_GAME)]
-		public async Task<GameState> JoinPrivateGameAsync(JoinPrivateGameRequest request)
+		public Task<JoinGameResponse> JoinPrivateGameAsync(JoinPrivateGameRequest request)
 		{
-			await Task.Delay(1000).ConfigureAwait(false);
 			string userId = ExtractUserId();
 			var player = new Player()
 			{
@@ -63,8 +62,7 @@ namespace Alinem.Hubs
 				Type = PlayerType.HUMAN
 			};
 
-			GameState newState = await JoinGameAsync(request.GameId, player).ConfigureAwait(true);
-			return newState;
+			return JoinGameAsync(request.GameId, player);
 		}
 
 		[HubMethodName(GameHubMethodNames.SEND_GAME_ACTION)]
@@ -209,7 +207,12 @@ namespace Alinem.Hubs
 			string randomGameId = serverState.PopRandomOpenGameId();
 			if (randomGameId != null)
 			{
-				return await JoinGameAsync(randomGameId, player).ConfigureAwait(false);
+				JoinGameResponse joinGameResponse = await JoinGameAsync(randomGameId, player).ConfigureAwait(false);
+				if(joinGameResponse.State != JoinGameResponseType.SUCCESS)
+                {
+					throw new Exception($"Error joining random game '{randomGameId}', expected success but got '{joinGameResponse.State}'");
+                }
+				return joinGameResponse.GameState;
 			}
 			else
 			{
@@ -244,18 +247,33 @@ namespace Alinem.Hubs
 			return gameState;
 		}
 
-		private async Task<GameState> JoinGameAsync(string gameId, Player player)
+		private async Task<JoinGameResponse> JoinGameAsync(string gameId, Player player)
 		{
-			GameState gameState = serverState.GetGameState(gameId);
-			GameState newState = gameLogic.AddPlayer(gameState, player);
-			serverState.UpdateGameState(newState, addedSecondPlayer: true);
-			// Notify opponent
-			var notification = new GameNotification
-			{
-				NewGameState = newState
-			};
-			await Clients.Client(newState.Player1.Id).ReceiveGameStateUpdate(notification).ConfigureAwait(false);
-			return newState;
+            try
+            {
+				GameState gameState = serverState.GetGameState(gameId);
+				GameState newState = gameLogic.AddPlayer(gameState, player);
+				serverState.UpdateGameState(newState, addedSecondPlayer: true);
+				// Notify opponent
+				var notification = new GameNotification
+				{
+					NewGameState = newState
+				};
+				await Clients.Client(newState.Player1.Id).ReceiveGameStateUpdate(notification).ConfigureAwait(false);
+				return new JoinGameResponse 
+				{
+					State = JoinGameResponseType.SUCCESS,
+					GameState = newState,
+				};
+			}
+			catch (GameNotFoundException)
+            {
+				return new JoinGameResponse
+				{
+					State = JoinGameResponseType.GAME_NOT_FOUND,
+					GameState = null
+				};
+			}
 		}
 	}
 }

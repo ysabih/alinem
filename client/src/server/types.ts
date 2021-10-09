@@ -1,10 +1,20 @@
-import { GameDifficulty, GameType, PlayerTurn, Point } from "../store/gameBoard/types";
+import { GameDifficulty, GameState, GameType, PlayerTurn, Point } from "../store/gameBoard/types";
 
 export interface InitGameRequest {
     userName: string,
     userTurn: PlayerTurn,
     gameType: GameType
     difficulty: GameDifficulty | null,
+}
+
+export interface JoinGameResponse {
+    state: JoinGameResponseType,
+    gameState: GameState
+}
+
+export enum JoinGameResponseType {
+    SUCCESS = "SUCCESS",
+	GAME_NOT_FOUND = "GAME_NOT_FOUND"
 }
 
 export interface JoinPrivateGameRequest {

@@ -404,7 +404,10 @@ namespace Alinem.IntegrationTests
 				GameId = initialGameState.Id,
 				UserName = "Introvert's Bud"
 			};
-			GameState joinedGameState = await secondPlayerConnection.InvokeAsync<GameState>(GameHubMethodNames.JOIN_PRIVATE_GAME, joinRequest).ConfigureAwait(false);
+			JoinGameResponse response = await secondPlayerConnection.InvokeAsync<JoinGameResponse>(GameHubMethodNames.JOIN_PRIVATE_GAME, joinRequest).ConfigureAwait(false);
+			GameState joinedGameState = response.GameState;
+
+			response.State.Should().Be(JoinGameResponseType.SUCCESS);
 
 			joinedGameState.Id.Should().Be(initialGameState.Id);
 			joinedGameState.Stage.Should().Be(GameStage.PLAYING);

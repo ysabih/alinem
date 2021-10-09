@@ -1,6 +1,6 @@
 import { HubConnection, HubConnectionBuilder, HubConnectionState, LogLevel } from '@microsoft/signalr'
 import { GameBoardState, GameNotification, GameState } from '../store/gameBoard/types';
-import { GameActionRequest, InitGameRequest, JoinPrivateGameRequest, QuitGameRequest, ResetGameRequest } from './types';
+import { GameActionRequest, InitGameRequest, JoinGameResponse, JoinPrivateGameRequest, QuitGameRequest, ResetGameRequest } from './types';
 
 const BacknedUrl = "http://localhost:5000";
 const GamehubRoute = "gamehub"
@@ -59,7 +59,7 @@ class BackendService {
 
     async joinPrivateGameAsync(request: JoinPrivateGameRequest) {
         let response = await this._connection.invoke(ServerMethodNames.JoinPrivateGame, request);
-        return response as GameState;
+        return response as JoinGameResponse;
     }
 
     // using send() because it does not wait for response from server

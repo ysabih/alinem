@@ -10,6 +10,18 @@ namespace Alinem.Models
 		public GameDifficulty? Difficulty { get; set; }
 	}
 
+	public class JoinGameResponse
+    {
+		public JoinGameResponseType State { get; set; }
+		public GameState GameState { get; set; }
+    }
+
+	public enum JoinGameResponseType
+    {
+		SUCCESS,
+		GAME_NOT_FOUND
+    }
+
 	public class JoinPrivateGameRequest
 	{
 		public string GameId { get; set; }

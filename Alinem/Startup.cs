@@ -23,7 +23,7 @@ namespace Alinem
 			AddGameHubDependencies(services);
 
 			services.AddSignalR(options => {
-				options.EnableDetailedErrors = true;
+				options.EnableDetailedErrors = false;
 			})
 			.AddNewtonsoftJsonProtocol(options => {
 				options.PayloadSerializerSettings.Converters.Add(new StringEnumConverter());
