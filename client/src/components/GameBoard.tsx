@@ -14,6 +14,8 @@ import { handleGameActionNotification, runBlockingAsync } from '../utils/compone
 import { Link } from 'react-router-dom';
 import { getCurrentPlayerId } from '../utils/gameRulesHelpers';
 import { StartMode } from './types';
+import { faCheck, faCopy } from '@fortawesome/free-solid-svg-icons';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 
 interface StateProps {
     blockingUI: BlockingUIState,
@@ -338,14 +340,17 @@ function WaitingForOpponentInPrivateGame(props: Props) {
             <h4 className="text-center">Waiting for opponent</h4>
             <SmallLoadingSpinner />
             <h5 className="text-center mt-5">Share the link with your friend</h5>
-            <div className="input-group mb-3">
-                <input type="text" className="form-control" readOnly
-                    aria-label="Amount (to the nearest dollar)" 
-                    value={joinGameUrl}/>
+            <div className="row justify-content-center">
+            <div className="input-group col-lg-3 col-md-4 col-sm-6">
+                <input type="text" className="form-control" readOnly value={joinGameUrl}/>
                 <div className="input-group-append">
-                    <button className={copyButtonClass} onClick={copyGameUrl}>{copiedUrl? 'Copied !' : 'Copy'}</button>
+                    <button className={copyButtonClass} onClick={copyGameUrl}>
+                        {copiedUrl? <FontAwesomeIcon icon={faCheck} /> : <FontAwesomeIcon icon={faCopy} />}
+                    </button>
                 </div>
             </div>
+            </div>
+            
         </>
     );
 }
