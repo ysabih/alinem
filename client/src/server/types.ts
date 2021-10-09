@@ -14,7 +14,8 @@ export interface JoinGameResponse {
 
 export enum JoinGameResponseType {
     SUCCESS = "SUCCESS",
-	GAME_NOT_FOUND = "GAME_NOT_FOUND"
+	GAME_NOT_FOUND = "GAME_NOT_FOUND",
+    CONNECTION_TO_SERVER_FAILED = "FAILED_TO_CONNECT_TO_SERVER"
 }
 
 export interface JoinPrivateGameRequest {
@@ -45,4 +46,12 @@ export interface MovePieceAction extends GameAction {
 
 export interface PutPieceAction extends GameAction {
     position: Point
+}
+
+export interface SignalrConnectionError {
+    innerError: any
+}
+
+export interface SignalrNotConnectedError {
+    message: string
 }
