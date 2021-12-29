@@ -15,25 +15,44 @@ const ServerMethodNames = {
     receiveOpponentQuitNotif: "ReceiveOpponentQuitNotif"
 }
 
-type GameNotificationHandler = (notification: GameNotification) => void;
-type OpponentQuitHandler = () => any;
+// Game event handlers
+export type GameNotificationHandler = (notification: GameNotification) => void;
+export type OpponentQuitHandler = () => any;
+
+// Connection lifecycle event handlers
+export type ConnectionClosedHandler = (error: Error | undefined) => void;
+export type ReconnectingHandler = ConnectionClosedHandler;
+export type ReconnectedHandler = (connectionId?: string | undefined) => void;
 
 class BackendService {
 
     _connection!: HubConnection;
 
-    async connectAsync() {
+    async connectAsync(
+            // Connection closed indefinitely, cannot reconnect
+            connectionClosedHandler: ConnectionClosedHandler,
+            // Connection temporarily lost, reconnecting
+            reconnectingHandler: ReconnectingHandler,
+            // Connection restored
+            reconnectedHandler: ReconnectedHandler
+        ) {
         if(this._connection != null && this.isConnected()){
             return;
         }
         this._connection = new HubConnectionBuilder()
         .withUrl(`${BacknedUrl}/${GamehubRoute}`)
-        .withAutomaticReconnect()
+        // Passing list of delays, stops retrying after 3 retries
+        .withAutomaticReconnect([500, 1000, 1500])
         .configureLogging(LogLevel.Information)
         .build();
 
         try {
             await this._connection.start();
+
+            this._connection.onclose(connectionClosedHandler);
+            this._connection.onreconnecting(reconnectingHandler);
+            this._connection.onreconnected(reconnectedHandler);
+
             console.log("Connected to game server");
         }
         catch(error) {
@@ -119,6 +138,15 @@ class BackendService {
         }
         this._connection.on(ServerMethodNames.receiveOpponentQuitNotif, () => {/*Do nothing*/});
     }
+
+    // registerConnectionLostHandler(handler: (error: Error | undefined) => void) {
+    //     this.throwIfNotConnected();
+    //     this._connection.onclose(handler)
+    // }
+
+    // clearConnectionLostHandler() {
+    //     this._connection.onclose(() => {/*Do nothing*/}); 
+    // }
 }
 
 export const backendService = new BackendService();

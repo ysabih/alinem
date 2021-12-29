@@ -18,6 +18,14 @@ export enum JoinGameResponseType {
     CONNECTION_TO_SERVER_FAILED = "FAILED_TO_CONNECT_TO_SERVER"
 }
 
+export enum ServerConnectionState {
+    CONNECTED = 0,
+    RECONNCTED = 1,
+    RECONNECTING = 2,
+    CLOSED = 3,
+    UNINITIALIZED = 4
+}
+
 export interface JoinPrivateGameRequest {
     gameId: string,
     userName: string

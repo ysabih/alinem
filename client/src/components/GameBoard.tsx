@@ -6,7 +6,7 @@ import GamePosition from './GamePosition';
 import { UserState } from '../store/user/types';
 import { backendService } from '../server/backendService'
 import LoadingSpinner from './LoadingSpinner';
-import { InitGameRequest, JoinGameResponse, JoinGameResponseType, JoinPrivateGameRequest, QuitGameRequest, ResetGameRequest, SignalrConnectionError } from '../server/types';
+import { InitGameRequest, JoinGameResponse, JoinGameResponseType, JoinPrivateGameRequest, QuitGameRequest, ResetGameRequest, ServerConnectionState, SignalrConnectionError } from '../server/types';
 import { applyGameBoardState, applyGameState, resetGameState, selectPiece, setOpponentLeftState } from '../store/gameBoard/actions';
 import { BlockingUIState } from '../store/ui/types';
 import { setBlockingUI } from '../store/ui/actions';
@@ -40,6 +40,7 @@ type Props = StateProps & DispatchProps & OwnProps;
 function GameBoard(props: Props) {
     const [initialized, setInitialized] = useState(false);
     const [initGameResponseType, setInitGameResponseType] = useState(JoinGameResponseType.SUCCESS);
+    const [connectionState, setConnectionState] = useState(ServerConnectionState.UNINITIALIZED);
     // Init game on server
     useEffect(() => {
         let loadingMessage = props.startMode === StartMode.Start? 'Initializing a new game...' : 'Connecting...';
@@ -51,36 +52,24 @@ function GameBoard(props: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
-    async function initializeAsync() {
-        if(initialized){
-           return 
-        }
-        setInitGameResponseType(await initGameAsync(props));
-        setInitialized(true);
-    }
-
-    return (
-        <>
-            { props.blockingUI.blocking ? <LoadingSpinner message={props.blockingUI.blockingMessage} /> : <></> }
-            <div style={{opacity: props.blockingUI.blocking? 0.2 : 1}}>
-                {initGameResponseType === JoinGameResponseType.SUCCESS ? <GameBoardCore {...props}/> : <></>}
-                {initGameResponseType === JoinGameResponseType.GAME_NOT_FOUND ? <GameNotFound/> : <></>}
-                {initGameResponseType === JoinGameResponseType.CONNECTION_TO_SERVER_FAILED ? <NoConnectionToServer/> : <></>}
-                <div className='container' style={{marginTop: 24}}>
-                    <div className='row justify-content-center'>
-                        <ResetGameVsComputerButton {...props} />
-                        <ReplayButton {...props} />
-                        <ExitGameButton {...props} />
-                    </div>
-                </div>
-            </div>
-        </>
-    );
-}
-
-async function initGameAsync(props: Props) : Promise<JoinGameResponseType> {
+    async function initGameAsync(props: Props) 
+    : Promise<JoinGameResponseType> {
     try{
-        await backendService.connectAsync();
+
+        let connectionClosedHandler = (error: Error | undefined) => {
+            setConnectionState(ServerConnectionState.CLOSED);
+            props.setBlockingUI(false, "");
+        }
+        let reconnectingHandler = (error: Error | undefined) => {
+            setConnectionState(ServerConnectionState.RECONNECTING);
+            props.setBlockingUI(true, "Trying to reconnect...");
+        }
+        let reconnectedHandler = (connectionId?: string | undefined) => {
+            setConnectionState(ServerConnectionState.RECONNCTED);
+            props.setBlockingUI(false, "");
+        }
+
+        await backendService.connectAsync(connectionClosedHandler, reconnectingHandler, reconnectedHandler);
     }
     catch(error){
         let connectionFailure = error as SignalrConnectionError;
@@ -150,8 +139,51 @@ async function initGameAsync(props: Props) : Promise<JoinGameResponseType> {
         props.setOpponentLeftState();
     });
     props.applyGameState(gameState);
+
     return responseType;
+    }
+
+    async function initializeAsync() {
+        if(initialized){
+           return 
+        }
+
+        
+
+        setInitGameResponseType(await initGameAsync(props));
+        setConnectionState(ServerConnectionState.CONNECTED);
+        setInitialized(true);
+    }
+
+    let serverConnectionLost = connectionState === ServerConnectionState.CLOSED;
+
+    return (
+        <>
+            { props.blockingUI.blocking ? <LoadingSpinner message={props.blockingUI.blockingMessage} /> : <></> }
+            <div style={{opacity: props.blockingUI.blocking? 0.2 : 1}}>
+                {initGameResponseType === JoinGameResponseType.SUCCESS && !serverConnectionLost ? <GameBoardCore {...props}/> : <></>}
+                {initGameResponseType === JoinGameResponseType.GAME_NOT_FOUND ? <GameNotFound/> : <></>}
+                {initGameResponseType === JoinGameResponseType.CONNECTION_TO_SERVER_FAILED || serverConnectionLost ? 
+                    <NoConnectionToServer connectionLost={serverConnectionLost}/> : <></>}
+                <div className='container' style={{marginTop: 24}}>
+                    <div className='row justify-content-center'>
+                        <ResetGameVsComputerButton {...props} />
+
+                        {/* Replay button */}
+                        <button className='col col-auto btn btn-lg btn-primary mr-3' 
+                            style={{display: canReinitializeGame(props) ? 'inline' : 'none'}} 
+                            onClick={async () => await initGameAsync(props)}
+                            >New game</button>
+
+                        <ExitGameButton {...props} />
+                    </div>
+                </div>
+            </div>
+        </>
+    );
 }
+
+
 
 function quitCurrentGame(props: Props) {
     runBlockingAsync(async () => {
@@ -227,14 +259,6 @@ function ResetGameVsComputerButton(props: Props) {
     );
 }
 
-function ReplayButton(props: Props) {
-    return (
-        <button className='col col-auto btn btn-lg btn-primary mr-3' 
-        style={{display: canReinitializeGame(props) ? 'inline' : 'none'}} 
-        onClick={async () => await initGameAsync(props)}>New game</button>
-    );
-}
-
 function GameNotFound() {
     return (
     <>
@@ -254,18 +278,18 @@ function GameNotFound() {
     </>);
 }
 
-function NoConnectionToServer() {
+function NoConnectionToServer(props: {connectionLost: boolean}) {
     return (
-        <>
+        <div className='container'>
         <div className='row'>
             <div className="col-md-8 mx-auto">
-                <h4 className="text-danger">Failed to connect to the server</h4>
+                <h4 className="text-danger">{props.connectionLost ? "Oops, lost connection to server" : "Oops, failed to connect to the server"}</h4>
             </div>
         </div>
         <div className='row justify-content-center' style={{marginTop: 64}}>
             <button className='col col-auto btn btn-lg btn-primary' onClick={() => window.location.reload()}>Refresh</button>
         </div>
-        </>);
+        </div>);
 }
 
 function GameBoardCore(props: Props) {
