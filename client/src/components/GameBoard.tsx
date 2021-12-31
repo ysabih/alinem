@@ -66,6 +66,7 @@ function GameBoard(props: Props) {
         }
         let reconnectedHandler = (connectionId?: string | undefined) => {
             setConnectionState(ServerConnectionState.RECONNCTED);
+            console.log("Connection restored, new id: "+connectionId);
             props.setBlockingUI(false, "");
         }
 
@@ -163,7 +164,7 @@ function GameBoard(props: Props) {
                 {initGameResponseType === JoinGameResponseType.GAME_NOT_FOUND ? <GameNotFound/> : <></>}
                 {initGameResponseType === JoinGameResponseType.CONNECTION_TO_SERVER_FAILED || serverConnectionLost ? 
                     <NoConnectionToServer connectionLost={serverConnectionLost}/> : <></>}
-                <div className='container' style={{marginTop: 24}}>
+                <div className='container mt-5'>
                     <div className='row justify-content-center'>
                         <ResetGameVsComputerButton {...props} />
 
