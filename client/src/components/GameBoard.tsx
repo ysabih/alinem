@@ -147,9 +147,7 @@ function GameBoard(props: Props) {
         if(initialized){
            return 
         }
-
         
-
         setInitGameResponseType(await initGameAsync(props));
         setConnectionState(ServerConnectionState.CONNECTED);
         setInitialized(true);
@@ -385,22 +383,26 @@ function GameHUD(props: StateProps){
     if(boardState == null) {
         throw new Error("Board state must not be null while game stage is "+props.game.stage);
     }
+    let winnerName = "";
     if(boardState.winner != null){
-        let winnerName = boardState.winner === PlayerTurn.ONE ? playerNames[0] : playerNames[1];
-        return(
-            <h3 className='h2' style={{textAlign: 'center', marginBottom: '32px'}}>{winnerName} WINS!</h3>
-        );
+        winnerName = boardState.winner === PlayerTurn.ONE ? playerNames[0] : playerNames[1];
     }
     let playerTurn = boardState.currentTurn;
-    let playerCursorStyle = "2px solid";
+    let playerCursorStyle = "2px solid black";
     let playerOneBorder = playerTurn === PlayerTurn.ONE ? playerCursorStyle : "";
     let playerTwoBorder = playerTurn === PlayerTurn.TWO ? playerCursorStyle : "";
     return(
-    <div className="container mb-5 mt-4 h-100">
-    <div className="row flex-nowrap h-100 justify-content-center">
-        <div className="col-sm-5 text-left p-2" style={{border: playerOneBorder, borderRadius: 0}}><span className="h4" style={{color: "red"}}>{playerNames[0]}</span></div>
-        {/* <div className="col-sm text-center h4">{turnCount}</div> */}
-        <div className="col-sm-5 text-right p-2" style={{border: playerTwoBorder, borderRadius: 0}}><span className="h4" style={{color: "blue"}}>{playerNames[1]}</span></div>
+    <div className="container mb-3 mt-4 px-0">
+    <div className="row flex-nowrap w-100 justify-content-center px-0 mx-0" style={{height: '110px'}}>
+        {
+            boardState.winner == null ?
+            <>
+                <div className="col-sm-5 text-left ps-1 p-2 align-self-center" ><span className="h4 p-3" style={{color: "red", border: playerOneBorder}}>{playerNames[0]}</span></div>
+                <div className="col-sm-5 text-right ps-1 p-2 align-self-center" ><span className="h4 p-3" style={{color: "blue", border: playerTwoBorder}}>{playerNames[1]}</span></div>
+            </>
+            : <h3 className='h2' style={{textAlign: 'center'}}>{winnerName} WINS!</h3>
+        }
+        
     </div>
     </div>
     );
